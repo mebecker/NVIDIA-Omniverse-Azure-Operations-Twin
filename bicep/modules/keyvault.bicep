@@ -1,5 +1,6 @@
 param keyVaultName string
 param location string
+param rbacAssignments array = []
 
 resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   name: keyVaultName
@@ -19,3 +20,13 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
     tenantId: subscription().tenantId
   }
 }
+
+resource rbacAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' =  [for rbacAssignment in rbacAssignments: {
+  name: guid(keyVaultName, rbacAssignment.roleDefinitionID, rbacAssignment.principalId, resourceGroup().id)
+  scope: keyVault
+  properties: {
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', rbacAssignment.roleDefinitionID)
+    principalId: rbacAssignment.principalId
+    principalType: 'User'
+  }
+} ]

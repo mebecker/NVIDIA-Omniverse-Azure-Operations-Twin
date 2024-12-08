@@ -24,6 +24,8 @@ param subnetId string
 
 param virtualNetworkName string
 
+param rbacAssignments array = []
+
 @description('User name for the Linux Virtual Machines.')
 // param linuxAdminUsername string
 
@@ -95,6 +97,29 @@ resource vnet 'Microsoft.Network/virtualNetworks@2023-09-01' existing = {
   scope: resourceGroup()
 }
 
+// var clusterAdminRoleDefinitionID = 'b1ff04bb-8a4e-4dc4-8eb5-8693973ce19b'
+// // var clusterAdminRoleAssignmentName = guid(clusterName, roleDefinitionID, resourceGroup().id)
+
+// resource k8sCluserAdminRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' =  [for adminRbacAssignee in adminRbacAssignees: {
+//   name: guid(clusterName, roleDefinitionID, adminRbacAssignee.userPrincipalId, resourceGroup().id)
+//   scope: aks
+//   properties: {
+//     roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', clusterAdminRoleDefinitionID)
+//     principalId: adminRbacAssignee.userPrincipalId
+//     principalType: 'User'
+//   }
+// }]
+
+resource rbacAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' =  [for rbacAssignment in rbacAssignments: {
+  name: guid(clusterName, rbacAssignment.roleDefinitionID, rbacAssignment.principalId, resourceGroup().id)
+  scope: aks
+  properties: {
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', rbacAssignment.roleDefinitionID)
+    principalId: rbacAssignment.principalId
+    principalType: 'User'
+  }
+} ]
+
 var roleDefinitionID = '4d97b98b-1d4f-4787-a291-c67834d212e7'
 var roleAssignmentName = guid(clusterName, roleDefinitionID, resourceGroup().id)
 
@@ -107,6 +132,7 @@ resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
     principalType: 'ServicePrincipal'
   }
 }
+
 
 output controlPlaneFQDN string = aks.properties.fqdn
 output principalId string = aks.identity.principalId

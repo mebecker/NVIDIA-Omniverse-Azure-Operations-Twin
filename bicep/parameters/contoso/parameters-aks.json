@@ -1,0 +1,45 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "centralus"
+    },
+    "resourceGroupName": {
+      "value": "rg-nvidia"
+    },
+    "virtualNetworkName": {
+      "value": "vnet-nvidia"
+    },
+    "clusterName" : {
+      "value": "aks-nvidia"
+    },
+    "dnsPrefix" : {
+      "value": "aks-nvidia-dns"
+    },
+    "agentPoolVMSize" : {
+      "value": "standard_d2s_v3"
+    },
+    "cachePoolVMSize" : {
+      "value": "Standard_D8s_v3"
+    },
+    "gpuPoolVMSize" : {
+      "value": "standard_d2s_v3"
+    },
+    "rbacAssignments" : {
+      "value": [
+        {
+          "principalId": "aef3bd84-3b1d-44d3-82de-28fa26b76798",
+          "principalType": "User",
+          "roleDefinitionId": "b1ff04bb-8a4e-4dc4-8eb5-8693973ce19b"
+        },
+        {
+          "principalId": "aef3bd84-3b1d-44d3-82de-28fa26b76798",
+          "principalType": "User",
+          "roleDefinitionId": "3498e952-d568-435e-9b2c-8d77e338d7f7"
+        }
+      ]
+    }
+  }
+}
+

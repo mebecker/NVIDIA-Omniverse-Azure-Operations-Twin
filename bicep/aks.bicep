@@ -8,6 +8,7 @@ param dnsPrefix string
 param agentPoolVMSize string
 param cachePoolVMSize string
 param gpuPoolVMSize string
+param rbacAssignments array = []
 
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2024-03-01' = {
   name: resourceGroupName
@@ -24,6 +25,7 @@ module aks 'modules/aks.bicep' = {
   name: 'aksDeploy'
   params: {
       virtualNetworkName: virtualNetworkName
+      rbacAssignments: rbacAssignments
       clusterName: clusterName
       location: location
       agentVMSize: agentPoolVMSize
