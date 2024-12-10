@@ -5,11 +5,11 @@
     "location": {
       "value": "eastus2"
     },
-    "resourceGroupName": {
-      "value": "rg-omnistreaming"
-    },
-    "keyvaultName": {
+    "keyVaultName": {
       "value": "kv-omnistreaming"
-    }
+    },
+    "rbacAssignments" : {
+      "value": []
+    }    
   }
 }

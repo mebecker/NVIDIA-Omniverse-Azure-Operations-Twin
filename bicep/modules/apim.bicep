@@ -34,7 +34,8 @@ param location string = resourceGroup().location
 
 param subnetId string
 param hostNameConfigurations array = []
-// param serviceUrl string
+
+param serviceUrl string
 
 #disable-next-line BCP081
 resource apiManagementService 'Microsoft.ApiManagement/service@2024-06-01-preview' = {
@@ -55,6 +56,7 @@ resource apiManagementService 'Microsoft.ApiManagement/service@2024-06-01-previe
     }
     virtualNetworkType: 'Internal'
     hostnameConfigurations: hostNameConfigurations
+    serviceUrl: serviceUrl
   }
 }
 
@@ -71,7 +73,7 @@ resource httpApi 'Microsoft.ApiManagement/service/apis@2024-06-01-preview' = {
     protocols: [
       'https'
     ]
-    serviceUrl: 'https://api.beckerobrien.com'
+    serviceUrl: serviceUrl
     type: 'http'
     subscriptionRequired: false
   }
@@ -84,6 +86,27 @@ resource httpApiGet 'Microsoft.ApiManagement/service/apis/operations@2024-06-01-
   properties: {
     displayName: 'Get'
     method: 'GET'
+    urlTemplate: '/*'
+    request: {
+      queryParameters: []
+    }
+    responses: [
+      {
+        statusCode: 200
+        description: 'Success'
+        representations: []
+      }
+    ]
+  }
+}
+
+#disable-next-line BCP081
+resource httpApiPost 'Microsoft.ApiManagement/service/apis/operations@2024-06-01-preview' = {
+  parent: httpApi
+  name: 'httpApiPostDeploy'
+  properties: {
+    displayName: 'Post'
+    method: 'POST'
     urlTemplate: '/*'
     request: {
       queryParameters: []

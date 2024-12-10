@@ -1,0 +1,689 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.31.92.45157",
+      "templateHash": "7552380227155600736"
+    }
+  },
+  "parameters": {
+    "resourceGroupName": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string"
+    },
+    "apimPublisherName": {
+      "type": "string"
+    },
+    "apimPublisherEmail": {
+      "type": "string"
+    },
+    "apimGwHostName": {
+      "type": "string"
+    },
+    "apimMgmtHostName": {
+      "type": "string"
+    },
+    "customDomainHostNameSslCertKeyVaultId": {
+      "type": "string"
+    },
+    "virtualNetworkName": {
+      "type": "string"
+    },
+    "serviceUrl": {
+      "type": "string"
+    },
+    "apiManagementServiceName": {
+      "type": "string"
+    },
+    "applicationGatewayName": {
+      "type": "string"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/resourceGroups",
+      "apiVersion": "2024-03-01",
+      "name": "[parameters('resourceGroupName')]",
+      "location": "[parameters('location')]"
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "apimDeploy",
+      "resourceGroup": "[parameters('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "apiManagementServiceName": {
+            "value": "[parameters('apiManagementServiceName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "publisherName": {
+            "value": "[parameters('apimPublisherName')]"
+          },
+          "publisherEmail": {
+            "value": "[parameters('apimPublisherEmail')]"
+          },
+          "subnetId": {
+            "value": "[format('{0}/subnets/subnet-apim', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupName')), 'Microsoft.Network/virtualNetworks', parameters('virtualNetworkName')))]"
+          },
+          "serviceUrl": {
+            "value": "[parameters('serviceUrl')]"
+          },
+          "hostNameConfigurations": {
+            "value": [
+              {
+                "type": "Proxy",
+                "hostName": "[parameters('apimGwHostName')]",
+                "defaultSslBinding": true,
+                "negotiateClientCertificate": false,
+                "certificateSource": "KeyVault",
+                "keyVaultId": "[parameters('customDomainHostNameSslCertKeyVaultId')]"
+              },
+              {
+                "type": "Management",
+                "hostName": "[parameters('apimMgmtHostName')]",
+                "certificateSource": "KeyVault",
+                "keyVaultId": "[parameters('customDomainHostNameSslCertKeyVaultId')]"
+              }
+            ]
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.31.92.45157",
+              "templateHash": "4253817657852462225"
+            }
+          },
+          "parameters": {
+            "apiManagementServiceName": {
+              "type": "string",
+              "defaultValue": "[format('apiservice{0}', uniqueString(resourceGroup().id))]",
+              "metadata": {
+                "description": "The name of the API Management service instance"
+              }
+            },
+            "publisherEmail": {
+              "type": "string",
+              "minLength": 1,
+              "metadata": {
+                "description": "The email address of the owner of the service"
+              }
+            },
+            "publisherName": {
+              "type": "string",
+              "minLength": 1,
+              "metadata": {
+                "description": "The name of the owner of the service"
+              }
+            },
+            "sku": {
+              "type": "string",
+              "defaultValue": "Developer",
+              "allowedValues": [
+                "Consumption",
+                "Developer",
+                "Basic",
+                "Basicv2",
+                "Standard",
+                "Standardv2",
+                "Premium"
+              ],
+              "metadata": {
+                "description": "The pricing tier of this API Management service"
+              }
+            },
+            "skuCount": {
+              "type": "int",
+              "defaultValue": 1,
+              "allowedValues": [
+                0,
+                1,
+                2
+              ],
+              "metadata": {
+                "description": "The instance size of this API Management service."
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Location for all resources."
+              }
+            },
+            "subnetId": {
+              "type": "string"
+            },
+            "hostNameConfigurations": {
+              "type": "array",
+              "defaultValue": []
+            },
+            "serviceUrl": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.ApiManagement/service",
+              "apiVersion": "2024-06-01-preview",
+              "name": "[parameters('apiManagementServiceName')]",
+              "location": "[parameters('location')]",
+              "sku": {
+                "name": "[parameters('sku')]",
+                "capacity": "[parameters('skuCount')]"
+              },
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "publisherEmail": "[parameters('publisherEmail')]",
+                "publisherName": "[parameters('publisherName')]",
+                "virtualNetworkConfiguration": {
+                  "subnetResourceId": "[parameters('subnetId')]"
+                },
+                "virtualNetworkType": "Internal",
+                "hostnameConfigurations": "[parameters('hostNameConfigurations')]",
+                "serviceUrl": "[parameters('serviceUrl')]"
+              }
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/apis",
+              "apiVersion": "2024-06-01-preview",
+              "name": "[format('{0}/{1}', parameters('apiManagementServiceName'), 'http')]",
+              "properties": {
+                "apiType": "http",
+                "displayName": "http",
+                "apiRevision": "1",
+                "isCurrent": true,
+                "path": "",
+                "protocols": [
+                  "https"
+                ],
+                "serviceUrl": "[parameters('serviceUrl')]",
+                "type": "http",
+                "subscriptionRequired": false
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service', parameters('apiManagementServiceName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/apis/operations",
+              "apiVersion": "2024-06-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('apiManagementServiceName'), 'http', 'httpApiGetDeploy')]",
+              "properties": {
+                "displayName": "Get",
+                "method": "GET",
+                "urlTemplate": "/*",
+                "request": {
+                  "queryParameters": []
+                },
+                "responses": [
+                  {
+                    "statusCode": 200,
+                    "description": "Success",
+                    "representations": []
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apiManagementServiceName'), 'http')]"
+              ]
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/apis/operations",
+              "apiVersion": "2024-06-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('apiManagementServiceName'), 'http', 'httpApiPostDeploy')]",
+              "properties": {
+                "displayName": "Post",
+                "method": "POST",
+                "urlTemplate": "/*",
+                "request": {
+                  "queryParameters": []
+                },
+                "responses": [
+                  {
+                    "statusCode": 200,
+                    "description": "Success",
+                    "representations": []
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apiManagementServiceName'), 'http')]"
+              ]
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/apis/operations",
+              "apiVersion": "2024-06-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('apiManagementServiceName'), 'http', 'httpApiPutDeploy')]",
+              "properties": {
+                "displayName": "Put",
+                "method": "PUT",
+                "urlTemplate": "/*",
+                "request": {
+                  "queryParameters": []
+                },
+                "responses": [
+                  {
+                    "statusCode": 200,
+                    "description": "Success",
+                    "representations": []
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apiManagementServiceName'), 'http')]"
+              ]
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/apis/operations",
+              "apiVersion": "2024-06-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('apiManagementServiceName'), 'http', 'httpApiDeleteDeploy')]",
+              "properties": {
+                "displayName": "Delete",
+                "method": "DEL",
+                "urlTemplate": "/*",
+                "request": {
+                  "queryParameters": []
+                },
+                "responses": [
+                  {
+                    "statusCode": 200,
+                    "description": "Success",
+                    "representations": []
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apiManagementServiceName'), 'http')]"
+              ]
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/apis/operations",
+              "apiVersion": "2024-06-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('apiManagementServiceName'), 'http', 'httpApiOptionsDeploy')]",
+              "properties": {
+                "displayName": "Options",
+                "method": "OPT",
+                "urlTemplate": "/*",
+                "request": {
+                  "queryParameters": []
+                },
+                "responses": [
+                  {
+                    "statusCode": 200,
+                    "description": "Success",
+                    "representations": []
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apiManagementServiceName'), 'http')]"
+              ]
+            }
+          ],
+          "outputs": {
+            "principalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ApiManagement/service', parameters('apiManagementServiceName')), '2024-06-01-preview', 'full').identity.principalId]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', parameters('resourceGroupName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "appGatewayDeploy",
+      "resourceGroup": "[parameters('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "applicationGatewayName": {
+            "value": "[parameters('applicationGatewayName')]"
+          },
+          "appgwHostName": {
+            "value": "appgw.contoso-omniverse.com"
+          },
+          "sslCertName": {
+            "value": "contoso-omniverse-wildcard"
+          },
+          "customDomainHostNameSslCertKeyVaultId": {
+            "value": "[parameters('customDomainHostNameSslCertKeyVaultId')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "subnetId": {
+            "value": "[format('{0}/subnets/subnet-waf', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupName')), 'Microsoft.Network/virtualNetworks', parameters('virtualNetworkName')))]"
+          },
+          "minCapacity": {
+            "value": 2
+          },
+          "maxCapacity": {
+            "value": 3
+          },
+          "cookieBasedAffinity": {
+            "value": "Disabled"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.31.92.45157",
+              "templateHash": "12778421012601319675"
+            }
+          },
+          "parameters": {
+            "applicationGatewayName": {
+              "type": "string",
+              "defaultValue": "applicationGatewayV2",
+              "metadata": {
+                "description": "Application Gateway name"
+              }
+            },
+            "minCapacity": {
+              "type": "int",
+              "defaultValue": 2,
+              "metadata": {
+                "description": "Minimum instance count for Application Gateway"
+              }
+            },
+            "maxCapacity": {
+              "type": "int",
+              "defaultValue": 10,
+              "metadata": {
+                "description": "Maximum instance count for Application Gateway"
+              }
+            },
+            "frontendPort": {
+              "type": "int",
+              "defaultValue": 80,
+              "metadata": {
+                "description": "Application Gateway Frontend port"
+              }
+            },
+            "backendPort": {
+              "type": "int",
+              "defaultValue": 443,
+              "metadata": {
+                "description": "Application gateway Backend port"
+              }
+            },
+            "subnetId": {
+              "type": "string"
+            },
+            "cookieBasedAffinity": {
+              "type": "string",
+              "defaultValue": "Disabled",
+              "allowedValues": [
+                "Enabled",
+                "Disabled"
+              ],
+              "metadata": {
+                "description": "Cookie based affinity"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Location for all resources."
+              }
+            },
+            "sslCertName": {
+              "type": "string"
+            },
+            "appgwHostName": {
+              "type": "string"
+            },
+            "customDomainHostNameSslCertKeyVaultId": {
+              "type": "string"
+            }
+          },
+          "variables": {
+            "appGwPublicIpName": "[format('{0}-pip', parameters('applicationGatewayName'))]",
+            "appGwSize": "Standard_v2"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/publicIPAddresses",
+              "apiVersion": "2020-06-01",
+              "name": "[variables('appGwPublicIpName')]",
+              "location": "[parameters('location')]",
+              "sku": {
+                "name": "Standard"
+              },
+              "properties": {
+                "publicIPAllocationMethod": "Static"
+              }
+            },
+            {
+              "type": "Microsoft.Network/applicationGateways",
+              "apiVersion": "2020-06-01",
+              "name": "[parameters('applicationGatewayName')]",
+              "location": "[parameters('location')]",
+              "zones": [
+                "1",
+                "2",
+                "3"
+              ],
+              "properties": {
+                "sku": {
+                  "name": "[variables('appGwSize')]",
+                  "tier": "Standard_v2"
+                },
+                "autoscaleConfiguration": {
+                  "minCapacity": "[parameters('minCapacity')]",
+                  "maxCapacity": "[parameters('maxCapacity')]"
+                },
+                "gatewayIPConfigurations": [
+                  {
+                    "name": "appGatewayIpConfig",
+                    "properties": {
+                      "subnet": {
+                        "id": "[parameters('subnetId')]"
+                      }
+                    }
+                  }
+                ],
+                "frontendIPConfigurations": [
+                  {
+                    "name": "appGatewayFrontendIP",
+                    "properties": {
+                      "publicIPAddress": {
+                        "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('appGwPublicIpName'))]"
+                      },
+                      "privateIPAddress": "10.2.1.10"
+                    }
+                  }
+                ],
+                "frontendPorts": [
+                  {
+                    "name": "httpPort",
+                    "properties": {
+                      "port": 80
+                    }
+                  },
+                  {
+                    "name": "httpsPort",
+                    "properties": {
+                      "port": 443
+                    }
+                  }
+                ],
+                "backendAddressPools": [
+                  {
+                    "name": "appGatewayBackendPool",
+                    "properties": {
+                      "backendAddresses": [
+                        {
+                          "fqdn": "apim-gw.beckerobrien.com"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "backendHttpSettingsCollection": [
+                  {
+                    "name": "appGatewayBackendHttpSettings",
+                    "properties": {
+                      "port": "[parameters('backendPort')]",
+                      "protocol": "Https",
+                      "cookieBasedAffinity": "[parameters('cookieBasedAffinity')]",
+                      "requestTimeout": 20,
+                      "pickHostNameFromBackendAddress": true,
+                      "probe": {
+                        "id": "[resourceId('Microsoft.Network/applicationGateways/probes', parameters('applicationGatewayName'), 'appGatewayProbe')]"
+                      }
+                    }
+                  }
+                ],
+                "sslCertificates": [
+                  {
+                    "name": "[parameters('sslCertName')]",
+                    "properties": {
+                      "keyVaultSecretId": "[parameters('customDomainHostNameSslCertKeyVaultId')]"
+                    }
+                  }
+                ],
+                "httpListeners": [
+                  {
+                    "name": "http",
+                    "properties": {
+                      "frontendIPConfiguration": {
+                        "id": "[resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', parameters('applicationGatewayName'), 'appGatewayFrontendIP')]"
+                      },
+                      "frontendPort": {
+                        "id": "[resourceId('Microsoft.Network/applicationGateways/frontendPorts', parameters('applicationGatewayName'), 'httpPort')]"
+                      },
+                      "protocol": "Http"
+                    }
+                  },
+                  {
+                    "name": "https",
+                    "properties": {
+                      "frontendIPConfiguration": {
+                        "id": "[resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', parameters('applicationGatewayName'), 'appGatewayFrontendIP')]"
+                      },
+                      "frontendPort": {
+                        "id": "[resourceId('Microsoft.Network/applicationGateways/frontendPorts', parameters('applicationGatewayName'), 'httpsPort')]"
+                      },
+                      "protocol": "Https",
+                      "sslCertificate": {
+                        "id": "[resourceId('Microsoft.Network/applicationGateways/sslCertificates', parameters('sslCertName'))]"
+                      },
+                      "hostNames": [
+                        "[parameters('appgwHostName')]"
+                      ],
+                      "requireServerNameIndication": true,
+                      "customErrorConfigurations": []
+                    }
+                  }
+                ],
+                "redirectConfigurations": [
+                  {
+                    "name": "redirectConfig",
+                    "properties": {
+                      "redirectType": "Permanent",
+                      "targetListener": {
+                        "id": "[resourceId('Microsoft.Network/applicationGateways/httpListeners', parameters('applicationGatewayName'), 'https')]"
+                      },
+                      "includePath": true,
+                      "includeQueryString": true,
+                      "requestRoutingRules": [
+                        {
+                          "id": "[resourceId('Microsoft.Network/applicationGateways/requestRoutingRules', parameters('applicationGatewayName'), 'http')]"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "requestRoutingRules": [
+                  {
+                    "name": "http",
+                    "properties": {
+                      "ruleType": "Basic",
+                      "priority": 100,
+                      "httpListener": {
+                        "id": "[resourceId('Microsoft.Network/applicationGateways/httpListeners', parameters('applicationGatewayName'), 'http')]"
+                      },
+                      "backendHttpSettings": {
+                        "id": "[resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', parameters('applicationGatewayName'), 'appGatewayBackendHttpSettings')]"
+                      }
+                    }
+                  },
+                  {
+                    "name": "https",
+                    "properties": {
+                      "ruleType": "Basic",
+                      "priority": 10,
+                      "httpListener": {
+                        "id": "[resourceId('Microsoft.Network/applicationGateways/httpListeners', parameters('applicationGatewayName'), 'https')]"
+                      },
+                      "backendAddressPool": {
+                        "id": "[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', parameters('applicationGatewayName'), 'appGatewayBackendPool')]"
+                      },
+                      "backendHttpSettings": {
+                        "id": "[resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', parameters('applicationGatewayName'), 'appGatewayBackendHttpSettings')]"
+                      }
+                    }
+                  }
+                ],
+                "probes": [
+                  {
+                    "name": "appGatewayProbe",
+                    "properties": {
+                      "protocol": "Https",
+                      "path": "/",
+                      "interval": 30,
+                      "timeout": 30,
+                      "unhealthyThreshold": 3,
+                      "minServers": 1,
+                      "pickHostNameFromBackendHttpSettings": true,
+                      "match": {
+                        "statusCodes": [
+                          "200-399"
+                        ]
+                      }
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', variables('appGwPublicIpName'))]"
+              ]
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', parameters('resourceGroupName'))]"
+      ]
+    }
+  ]
+}
