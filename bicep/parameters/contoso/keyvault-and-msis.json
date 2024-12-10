@@ -1,0 +1,52 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "eastus2"
+    },
+    "keyVaultName": {
+      "value": "kv-nvidia-2"
+    },
+    "rbacAssignments" : {
+      "value": [
+        {
+          "comment": "adin, kv secrets officer",
+          "principalId": "08b01423-7f98-4ecd-9b75-3f6ce7706b7f",
+          "principalType": "User",
+          "roleDefinitionId": "b86a8fe4-44ce-4948-aee5-eccb2c155cd7"
+        },
+        {
+          "comment": "adin, kv certificates officer",
+          "principalId": "08b01423-7f98-4ecd-9b75-3f6ce7706b7f",
+          "principalType": "User",
+          "roleDefinitionId": "a4417e6f-fecd-4de8-b567-7b0420556985"
+        }
+      ]
+    },
+    "virtualNetworkName": {
+      "value": "vnet-nvidia"
+    },
+    "vnetAddressPrefix": {
+      "value": "10.2.0.0/16"
+    },
+    "aksSubnetAddressPrefix": {
+      "value": "10.2.0.0/24"
+    },
+    "wafSubnetAddressPrefix": {
+      "value": "10.2.1.0/24"
+    },
+    "apimSubnetAddressPrefix": {
+      "value": "10.2.2.0/24"
+    },
+    "nsgNameExternal": {
+      "value": "nsg-nvidia-external"
+    },
+    "nsgNameInternal": {
+      "value": "nsg-nvidia-internal"
+    },
+    "dnsZoneName": {
+      "value": "contoso-omniverse.com"
+    }    
+  }
+}
