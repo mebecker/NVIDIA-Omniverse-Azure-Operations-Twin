@@ -33,7 +33,7 @@
         "value": "apim-mgmt.contoso-omniverse.com"
       },  
       "serviceUrl": {
-        "value": "api.contoso-omniverse.com"
+        "value": "http://api.contoso-omniverse.com"
       }, 
       "apiManagementServiceName": {
         "value": "apim-omnistreaming"
