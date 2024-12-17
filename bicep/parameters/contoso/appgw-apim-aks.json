@@ -3,13 +3,13 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
       "location": {
-        "value": "eastus2"
+        "value": "centralus"
       },
       "virtualNetworkName": {
         "value": "vnet-nvidia"
       },
       "dnsPrefix" : {
-        "value": "aks-nvidia-dns-2"
+        "value": "aks-omniverse"
       },
       "agentVMSize" : {
         "value": "standard_d2s_v3"
@@ -26,27 +26,30 @@
       "apimPublisherEmail" : {
         "value": "john.doe@contoso.com"
       },
+      "appGwHostName": {
+        "value": "appgw.omniverse-frontend.beckerobrien.com"
+      },      
       "apimGwHostName": {
-        "value": "apim-gw.contoso-omniverse.com"
+        "value": "apim-gw.omniverse-backend.beckerobrien.com"
       },
       "apimMgmtHostName": {
-        "value": "apim-mgmt.contoso-omniverse.com"
+        "value": "apim-mgmt.omniverse-backend.beckerobrien.com"
       },  
       "serviceUrl": {
-        "value": "http://api.contoso-omniverse.com"
+        "value": "http://api.omniverse-backend.beckerobrien.com"
       }, 
       "apiManagementServiceName": {
-        "value": "apim-nvidia-2"
+        "value": "apim-nvidia"
       }, 
       "applicationGatewayName": {
         "value": "appgw-nvidia"
       }, 
+      "keyVaultName": {
+        "value": "kv-nvidia-4"
+      },       
       "aksClusterName": {
         "value": "aks-nvidia"
       }, 
-      "customDomainHostNameSslCertKeyVaultId": {
-        "value": "https://kv-nvidia.vault.azure.net/secrets/contoso-omniverse"
-      },  
       "aksRbacAssignments" : {
         "value": [
           {
@@ -60,7 +63,19 @@
             "roleDefinitionId": "3498e952-d568-435e-9b2c-8d77e338d7f7"
           }
         ]
-      }
+      },
+      "appGwSslCertName" : {
+        "value": "omniverse-frontend.beckerobrien.com"
+      },
+      "apimSslCertName" : {
+        "value": "omniverse-backend.beckerobrien.com"
+      },
+      "dnsZoneName": {
+        "value": "omniverse-backend.beckerobrien.com"
+      },
+      "logAnalyticsName": {
+        "value": "log-nvidia"
+      }          
     }
   }
   

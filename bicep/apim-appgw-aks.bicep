@@ -5,7 +5,6 @@ param apimPublisherName string
 param apimPublisherEmail string
 param apimGwHostName string
 param apimMgmtHostName string
-param customDomainHostNameSslCertKeyVaultId string
 param virtualNetworkName string
 param serviceUrl string
 param apiManagementServiceName string
@@ -13,15 +12,16 @@ param applicationGatewayName string
 param apimSku string = 'Developer'
 param apimSkuCount int = 1
 param appGwPublicIpName string = '${applicationGatewayName}-pip'
-param appGwSize string = 'Standard_v2'
 @description('Minimum instance count for Application Gateway')
 param minCapacity int = 2
 
 @description('Maximum instance count for Application Gateway')
 param maxCapacity int = 3
 param cookieBasedAffinity string = 'Disabled'
-param sslCertName string = 'contoso-omniverse-wildcard'
-param appgwHostName string = 'appgw.contoso-omniverse.com'
+param appGwSslCertName string 
+param apimSslCertName string 
+param appGwHostName string 
+param keyVaultName string
 
 param aksClusterName string
 param dnsPrefix string
@@ -36,8 +36,21 @@ param agentMaxPods int = 30
 param agentVMSize string
 param cacheVMSize string
 param gpuVMSize string
+param logAnalyticsName string
 
 param aksRbacAssignments array = []
+
+param dnsZoneName string
+
+var appGwSslCertSecretName = replace(appGwSslCertName, '.', '-')
+var apimSslCertSecretName = replace(apimSslCertName, '.', '-')
+
+var appgwResourceId = resourceId('Microsoft.Network/applicationGateways', '${applicationGatewayName}')
+var frontendAgwCertificateId = '${appgwResourceId}/sslCertificates/${appGwSslCertName}'
+
+resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' existing = {
+  name: logAnalyticsName
+}
 
 resource vnet 'Microsoft.Network/virtualNetworks@2023-09-01' existing = {
   name: virtualNetworkName
@@ -51,6 +64,10 @@ resource apimMsi 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-07-31-pr
   name: 'msi-apim'
 }
 
+resource keyVault 'Microsoft.KeyVault/vaults@2024-04-01-preview' existing = {
+  name: keyVaultName
+} 
+
 resource publicIP 'Microsoft.Network/publicIPAddresses@2020-06-01' = {
   name: appGwPublicIpName
   location: location
@@ -59,6 +76,30 @@ resource publicIP 'Microsoft.Network/publicIPAddresses@2020-06-01' = {
   }
   properties: {
     publicIPAllocationMethod: 'Static'
+  }
+}
+
+resource firewallPolicy 'Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies@2021-03-01' = {
+  name: 'default'
+  location: location
+  properties: {
+    customRules: []
+    policySettings: {
+      requestBodyCheck: true
+      maxRequestBodySizeInKb: 128
+      fileUploadLimitInMb: 100
+      mode: 'Detection'
+    }
+    managedRules: {
+      managedRuleSets: [
+        {
+          ruleSetType: 'OWASP'
+          ruleSetVersion: '3.2'
+          ruleGroupOverrides: []
+        }
+      ]
+      exclusions: []
+    }
   }
 }
 
@@ -78,8 +119,8 @@ resource applicationGateway 'Microsoft.Network/applicationGateways@2020-06-01' =
   ]
   properties: {
     sku: {
-      name: appGwSize
-      tier: 'Standard_v2'
+      name: 'WAF_v2'
+      tier: 'WAF_v2'
     }
     autoscaleConfiguration: {
       minCapacity: minCapacity
@@ -149,14 +190,14 @@ resource applicationGateway 'Microsoft.Network/applicationGateways@2020-06-01' =
       }
     ]
 
-    // sslCertificates: [
-    //   {
-    //     name: sslCertName
-    //     properties: {
-    //       keyVaultSecretId: customDomainHostNameSslCertKeyVaultId
-    //     }
-    //   }
-    // ]
+    sslCertificates: [
+      {
+        name: appGwSslCertName
+        properties: {
+          keyVaultSecretId: '${keyVault.properties.vaultUri}secrets/${appGwSslCertSecretName}'
+        }
+      }
+    ]
 
     httpListeners: [
       {
@@ -171,51 +212,53 @@ resource applicationGateway 'Microsoft.Network/applicationGateways@2020-06-01' =
           protocol: 'Http'
         }
       }
-      // {
-      //   name: 'https'
-      //   properties: {
-      //     frontendIPConfiguration: {
-      //       id: resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', applicationGatewayName, 'appGatewayFrontendIP')
-      //     }
-      //     frontendPort: {
-      //       id: resourceId('Microsoft.Network/applicationGateways/frontendPorts', applicationGatewayName, 'httpsPort')
-      //     }
-      //     protocol: 'Https'
-      //     sslCertificate: {
-      //       id: resourceId('Microsoft.Network/applicationGateways/sslCertificates', sslCertName)
-      //     }
-      //     hostNames: [
-      //       appgwHostName
-      //     ]
-      //     requireServerNameIndication: true
-      //     customErrorConfigurations: []
-      //   }
-      // }      
+      {
+        name: 'https'
+        properties: {
+          frontendIPConfiguration: {
+            id: resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', applicationGatewayName, 'appGatewayFrontendIP')
+          }
+          frontendPort: {
+            id: resourceId('Microsoft.Network/applicationGateways/frontendPorts', applicationGatewayName, 'httpsPort')
+          }
+          protocol: 'Https'
+          sslCertificate: {
+            #disable-next-line use-resource-id-functions
+            id: frontendAgwCertificateId
+          }
+          hostNames: [
+            appGwHostName
+            '*.${appGwHostName}'
+          ]
+          requireServerNameIndication: true
+          customErrorConfigurations: []
+        }
+      }      
     ]
-    // redirectConfigurations: [
-    //   {
-    //     name: 'redirectConfig'
-    //     properties: {
-    //       redirectType: 'Permanent'
-    //       targetListener: {
-    //         id: resourceId('Microsoft.Network/applicationGateways/httpListeners', applicationGatewayName, 'https')
-    //       }
-    //       includePath: true
-    //       includeQueryString: true
-    //       requestRoutingRules: [
-    //         {
-    //           id: resourceId('Microsoft.Network/applicationGateways/requestRoutingRules', applicationGatewayName, 'http')
-    //         }
-    //       ]
-    //     }
-    //   }
-    // ]
+    redirectConfigurations: [
+      {
+        name: 'redirectConfig'
+        properties: {
+          redirectType: 'Permanent'
+          targetListener: {
+            id: resourceId('Microsoft.Network/applicationGateways/httpListeners', applicationGatewayName, 'https')
+          }
+          includePath: true
+          includeQueryString: true
+          requestRoutingRules: [
+            {
+              id: resourceId('Microsoft.Network/applicationGateways/requestRoutingRules', applicationGatewayName, 'http')
+            }
+          ]
+        }
+      }
+    ]
     requestRoutingRules: [
       {
         name: 'http'
         properties: {
           ruleType: 'Basic'
-          priority: 10
+          priority: 20
           httpListener: {
             id: resourceId('Microsoft.Network/applicationGateways/httpListeners', applicationGatewayName, 'http')
           }
@@ -227,35 +270,22 @@ resource applicationGateway 'Microsoft.Network/applicationGateways@2020-06-01' =
           }
         }
       } 
-      // {
-      //   name: 'http'
-      //   properties: {
-      //     ruleType: 'Basic'
-      //     priority: 100
-      //     httpListener: {
-      //       id: resourceId('Microsoft.Network/applicationGateways/httpListeners', applicationGatewayName, 'http')
-      //     }
-      //     backendHttpSettings: {
-      //       id: resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', applicationGatewayName, 'appGatewayBackendHttpSettings')
-      //     }
-      //   }
-      // }
-      // {
-      //   name: 'https'
-      //   properties: {
-      //     ruleType: 'Basic'
-      //     priority: 10
-      //     httpListener: {
-      //       id: resourceId('Microsoft.Network/applicationGateways/httpListeners', applicationGatewayName, 'https')
-      //     }
-      //     backendAddressPool: {
-      //       id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', applicationGatewayName, 'appGatewayBackendPool')
-      //     }
-      //     backendHttpSettings: {
-      //       id: resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', applicationGatewayName, 'appGatewayBackendHttpSettings')
-      //     }
-      //   }
-      // }      
+      {
+        name: 'https'
+        properties: {
+          ruleType: 'Basic'
+          priority: 10
+          httpListener: {
+            id: resourceId('Microsoft.Network/applicationGateways/httpListeners', applicationGatewayName, 'https')
+          }
+          backendAddressPool: {
+            id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', applicationGatewayName, 'appGatewayBackendPool')
+          }
+          backendHttpSettings: {
+            id: resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', applicationGatewayName, 'https')
+          }
+        }
+      }      
     ]
     probes: [
       {
@@ -274,6 +304,37 @@ resource applicationGateway 'Microsoft.Network/applicationGateways@2020-06-01' =
             ]
           }
         }
+      }
+    ]
+    firewallPolicy: {
+      id: firewallPolicy.id
+    }
+  }
+}
+
+resource appgwDiagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: 'Log Analytics'
+  scope: applicationGateway
+  properties: {
+    workspaceId: logAnalytics.id
+    logs: [
+      {
+        category: 'ApplicationGatewayAccessLog'
+        enabled: true
+      }
+      {
+        category: 'ApplicationGatewayPerformanceLog'
+        enabled: true
+      }
+      {
+        category: 'ApplicationGatewayFirewallLog'
+        enabled: true
+      }
+    ]
+    metrics: [
+      {
+        category: 'AllMetrics'
+        enabled: true
       }
     ]
   }
@@ -308,14 +369,42 @@ resource apiManagementService 'Microsoft.ApiManagement/service@2024-06-01-previe
           negotiateClientCertificate: false
           certificateSource: 'KeyVault'
           identityClientId: apimMsi.properties.clientId
-          keyVaultId: customDomainHostNameSslCertKeyVaultId
+          keyVaultId:  '${keyVault.properties.vaultUri}secrets/${apimSslCertSecretName}'
       }
       {
           type: 'Management'
           hostName: apimMgmtHostName
           certificateSource: 'KeyVault'
           identityClientId: apimMsi.properties.clientId
-          keyVaultId: customDomainHostNameSslCertKeyVaultId
+          keyVaultId:  '${keyVault.properties.vaultUri}secrets/${apimSslCertSecretName}'
+      }
+    ]
+  }
+}
+
+resource apimwDiagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: 'Log Analytics'
+  scope: apiManagementService
+  properties: {
+    workspaceId: logAnalytics.id
+    logs: [
+      {
+        category: 'GatewayLogs'
+        enabled: true
+      }
+      {
+        category: 'WebSocketConnectionLogs'
+        enabled: true
+      }
+      {
+        category: 'DeveloperPortalAuditLogs'
+        enabled: true
+      }
+    ]
+    metrics: [
+      {
+        category: 'AllMetrics'
+        enabled: true
       }
     ]
   }
@@ -492,6 +581,67 @@ resource aks 'Microsoft.ContainerService/managedClusters@2024-06-02-preview' = {
       dnsServiceIP: '10.0.0.10'
       networkPolicy: 'none'
     }
+  }
+}
+
+resource aksDiagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: 'Log Analytics'
+  scope: aks
+  properties: {
+    workspaceId: logAnalytics.id
+    logs: [
+      {
+        category: 'kube-apiserver'
+        enabled: true
+      }
+      {
+        category: 'kube-audit'
+        enabled: true
+      }
+      {
+        category: 'kube-audit-admin'
+        enabled: true
+      }
+      {
+        category: 'kube-controller-manager'
+        enabled: true
+      }
+      {
+        category: 'kube-scheduler'
+        enabled: true
+      }
+      {
+        category: 'cluster-autoscaler'
+        enabled: true
+      }
+      {
+        category: 'cloud-controller-manager'
+        enabled: true
+      }
+    ]
+    metrics: [
+      {
+        category: 'AllMetrics'
+        enabled: true
+      }
+    ]
+  }
+}
+
+resource zone 'Microsoft.Network/privateDnsZones@2024-06-01' existing = {
+  name: dnsZoneName
+}
+
+resource record 'Microsoft.Network/privateDnsZones/A@2024-06-01' = {
+  parent: zone
+  name: 'apim-gw'
+  properties: {
+    ttl: 300
+    aRecords: [
+      {
+        ipv4Address: apiManagementService.properties.privateIPAddresses[0]
+      }
+    ]
   }
 }
 

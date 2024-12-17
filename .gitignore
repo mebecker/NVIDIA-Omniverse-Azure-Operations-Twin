@@ -40,8 +40,10 @@ deps/**/user.toml
 **/web-app/node_modules/
 **/web-app/dist/
 
+/certificates/*
+!/certificates/create-and-upload-certificates.sh
 
-
+/bicep/parameters/ccci/*
 
 
 
