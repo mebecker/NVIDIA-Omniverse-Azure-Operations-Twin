@@ -40,7 +40,7 @@ param logAnalyticsName string
 
 param aksRbacAssignments array = []
 
-param dnsZoneName string
+param backendDnsZoneName string
 
 var appGwSslCertSecretName = replace(appGwSslCertName, '.', '-')
 var apimSslCertSecretName = replace(apimSslCertName, '.', '-')
@@ -629,7 +629,7 @@ resource aksDiagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01
 }
 
 resource zone 'Microsoft.Network/privateDnsZones@2024-06-01' existing = {
-  name: dnsZoneName
+  name: backendDnsZoneName
 }
 
 resource record 'Microsoft.Network/privateDnsZones/A@2024-06-01' = {

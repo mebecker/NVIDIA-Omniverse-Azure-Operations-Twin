@@ -32,7 +32,7 @@
     "nsgNameInternal": {
       "value": "nsg-nvidia-internal"
     },
-    "dnsZoneName": {
+    "backendDnsZoneName": {
       "value": "omniverse-backend.beckerobrien.com"
     },
     "logAnalyticsName": {

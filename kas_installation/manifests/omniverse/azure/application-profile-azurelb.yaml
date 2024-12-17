@@ -1,12 +1,12 @@
 apiVersion: omniverse.nvidia.com/v1
 kind: ApplicationProfile
 metadata:
-  name: app-profile-usd-viewer-msft
+  name: azurelb-wss
 spec:
   name: AzureLB example profile
   description: Default profile - uses an AzureLB per stream
   supportedApplications:
-    - name: "usd-viewer-msft"
+    - name: "usd-viewer-ccci"
       versions:
         - '*'
   chartMappings:
@@ -16,16 +16,15 @@ spec:
   chartValues:
     global:
       imagePullSecrets:
-        - name: regcred
+        - name: myregcred
     streamingKit:
       image:
-        repository: <Container_Registry_path>
+        repository: acromnistreaming.azurecr.io/usd-viewer-ccci
         pullPolicy: Always
-        tag: '<tag>'
+        tag: '0.1.0'
       envoy:
         tls:
-          enabled: true
-          secretRef: stream-tls-secret
+          enabled: false
       sessionId: session_id
       service:
         signalingPort: 31000

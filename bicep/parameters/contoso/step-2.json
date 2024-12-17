@@ -70,7 +70,7 @@
       "apimSslCertName" : {
         "value": "omniverse-backend.beckerobrien.com"
       },
-      "dnsZoneName": {
+      "backendDnsZoneName": {
         "value": "omniverse-backend.beckerobrien.com"
       },
       "logAnalyticsName": {

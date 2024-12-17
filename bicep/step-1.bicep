@@ -9,7 +9,7 @@ param apimSubnetAddressPrefix string
 param nsgNameExternal string
 param nsgNameInternal string
 param virtualNetworkName string
-param dnsZoneName string
+param backendDnsZoneName string
 param keyVaultOperatorId string
 param logAnalyticsName string
 
@@ -293,7 +293,7 @@ resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-09-01' = {
 
 resource privateDnsZone 'Microsoft.Network/privateDnsZones@2024-06-01' = {
   location: 'Global'
-  name: dnsZoneName
+  name: backendDnsZoneName
   properties: {}
 }
 
