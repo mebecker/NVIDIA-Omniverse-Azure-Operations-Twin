@@ -5,6 +5,8 @@
 1. AZ CLI
 2. Certbot
 3. OpenSSL
+4. Kubectl
+5. Kubelogin
 
 Caveat - All of the automation was developed and tested in Ubuntu 24.04.01 running in WSL. There is nothing in the automation that specifically *requires* Linux, but running directly under Windows will likely require some modifications to commands, strings, etc.
 
@@ -36,3 +38,20 @@ Caveat - All of the automation was developed and tested in Ubuntu 24.04.01 runni
     ```bash
     az deployment group create --resource-group $RESOURCE_GROUP_NAME --template-file ./bicep/step-2.bicep --parameters ./bicep/parameters/contoso/step-2.json
     ```
+
+4. Deploy nginx-ingress-controller
+
+    Update ./k8s/nginx-ingress-controller/values-internal.yaml 
+
+    1. Set "service.beta.kubernetes.io/azure-load-balancer-resource-group" to the managed resource group for your AKS cluster. You can get that via `az aks show --resource-group $RESOURCE_GROUP_NAME --name $CLUSTER_NAME --
+query nodeResourceGroup`
+    2. Set "service.beta.kubernetes.io/azure-load-balancer-internal-subnet" to your AKS subnet
+    3. Run the following commands
+
+        ```bash
+        az aks get-credentials --format azure --resource-group rg-nvidia --name aks-nvidia
+        export KUBECONFIG=/home/${USER}/.kube/config
+        kubelogin convert-kubeconfig –l azurecli
+
+        helm upgrade -i nginx-ingress-controller-internal -n nginx-ingress-controller --create-namespace -f ./k8s/nginx-ingress-controller/values-internal.yaml bitnami/nginx-ingress-controller
+        ```
