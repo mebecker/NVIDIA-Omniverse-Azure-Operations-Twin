@@ -18,7 +18,7 @@ Caveat - All of the automation was developed and tested in Ubuntu 24.04.01 runni
 
     az login
     az group create --location $LOCATION --name $RESOURCE_GROUP_NAME
-    az deployment group create --resource-group $RESOURCE_GROUP_NAME --template-file ./bicep/vnet-keyVault-msis.bicep --parameters ./bicep/parameters/contoso/keyvault-and-msis.json  
+    az deployment group create --resource-group $RESOURCE_GROUP_NAME --template-file ./bicep/step-1.bicep --parameters ./bicep/parameters/contoso/step-1.json  
     ```
 
 2. Create certificates and upload to Key Vault
@@ -34,5 +34,5 @@ Caveat - All of the automation was developed and tested in Ubuntu 24.04.01 runni
 3. Deploy Application Gateway, APIM, AKS. This step will take a while (up to 45 minutes) since APIM takes a long time to deploy.
 
     ```bash
-    az deployment group create --resource-group $RESOURCE_GROUP_NAME --template-file ./bicep/apim-appgw-aks.bicep --parameters ./bicep/parameters/contoso/appgw-apim-aks.json
+    az deployment group create --resource-group $RESOURCE_GROUP_NAME --template-file ./bicep/step-2.bicep --parameters ./bicep/parameters/contoso/step-2.json
     ```
