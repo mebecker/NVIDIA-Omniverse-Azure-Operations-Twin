@@ -11,7 +11,7 @@ param apiManagementServiceName string
 param applicationGatewayName string
 param apimSku string = 'Developer'
 param apimSkuCount int = 1
-param appGwPublicIpName string = '${applicationGatewayName}-pip'
+param appGwPublicIpName string = 'pip-${applicationGatewayName}'
 @description('Minimum instance count for Application Gateway')
 param minCapacity int = 2
 
