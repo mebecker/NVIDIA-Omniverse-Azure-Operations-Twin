@@ -12,7 +12,9 @@ Caveat - All of the automation was developed and tested in Ubuntu 24.04.01 runni
 
 ## Deplyoment steps
 
-1. Login to AZ CLI, create resource group and deploy Key Vault, MSIs, and VNet.
+1. Update all of the values in the json files in the ./bicep/paramaters/contoso folder.
+
+2. Login to AZ CLI, create resource group and deploy Key Vault, MSIs, and VNet.
 
     ```bash
     RESOURCE_GROUP_NAME=""
@@ -23,7 +25,7 @@ Caveat - All of the automation was developed and tested in Ubuntu 24.04.01 runni
     az deployment group create --resource-group $RESOURCE_GROUP_NAME --template-file ./bicep/step-1.bicep --parameters ./bicep/parameters/contoso/step-1.json  
     ```
 
-2. Create certificates and upload to Key Vault
+3. Create certificates and upload to Key Vault
 
     ```bash
     DOMAINS="" #comma-delimited list of domains for which to create and upload certificates. you should have one for the "front end" and one for the "back end"
@@ -33,13 +35,13 @@ Caveat - All of the automation was developed and tested in Ubuntu 24.04.01 runni
     ./create-and-upload-certificates.sh $DOMAINS $EMAIL $KEYVAULT_NAME
     ```
 
-3. Deploy Application Gateway, APIM, AKS. This step will take a while (up to 45 minutes) since APIM takes a long time to deploy.
+4. Deploy Application Gateway, APIM, AKS. This step will take a while (up to 45 minutes) since APIM takes a long time to deploy.
 
     ```bash
     az deployment group create --resource-group $RESOURCE_GROUP_NAME --template-file ./bicep/step-2.bicep --parameters ./bicep/parameters/contoso/step-2.json
     ```
 
-4. Deploy nginx-ingress-controller
+5. Deploy nginx-ingress-controller
 
     Update ./k8s/nginx-ingress-controller/values-internal.yaml 
 
