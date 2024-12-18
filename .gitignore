@@ -44,7 +44,7 @@ deps/**/user.toml
 !/certificates/create-and-upload-certificates.sh
 
 /bicep/parameters/ccci/*
-
+/k8s/working/*
 /kas_installation/scripts/external-dns/azure.json
 
 

@@ -8,8 +8,8 @@
       "virtualNetworkName": {
         "value": "vnet-nvidia"
       },
-      "dnsPrefix" : {
-        "value": "aks-omniverse"
+      "aksDnsPrefix" : {
+        "value": "contoso-omniverse"
       },
       "agentVMSize" : {
         "value": "standard_d2s_v3"
@@ -19,6 +19,15 @@
       },
       "gpuVMSize" : {
         "value": "standard_d2s_v3"
+      },
+      "agentPoolName": {
+        "value":  "agentpool"
+      },
+      "cachePoolName": {
+        "value":  "cachepool"
+      },
+      "gpuPoolName": {
+        "value":  "gpupool"
       },
       "apimPublisherName" : {
         "value": "John Doe"

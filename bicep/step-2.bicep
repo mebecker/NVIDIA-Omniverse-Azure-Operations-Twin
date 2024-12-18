@@ -24,7 +24,7 @@ param appGwHostName string
 param keyVaultName string
 
 param aksClusterName string
-param dnsPrefix string
+param aksDnsPrefix string
 param agentNodeCount int = 3
 
 param cacheNodeCount int = 1
@@ -32,6 +32,10 @@ param cacheNodeCount int = 1
 param gpuNodeCount int = 1
 
 param agentMaxPods int = 30
+
+param agentPoolName string
+param cachePoolName string
+param gpuPoolName string
 
 param agentVMSize string
 param cacheVMSize string
@@ -292,7 +296,7 @@ resource applicationGateway 'Microsoft.Network/applicationGateways@2020-06-01' =
         name: 'appGatewayProbe'
         properties: {
           protocol: 'Https'
-          path: '/'
+          path: '/status-0123456789abcdef'
           interval: 30
           timeout: 30
           unhealthyThreshold: 3
@@ -545,10 +549,10 @@ resource aks 'Microsoft.ContainerService/managedClusters@2024-06-02-preview' = {
       managed: true
       enableAzureRBAC: true
     }
-    dnsPrefix: dnsPrefix
+    dnsPrefix: aksDnsPrefix
     agentPoolProfiles: [
       {
-        name: 'agentpoolds'
+        name: agentPoolName
         count: agentNodeCount
         vmSize: agentVMSize
         osType: 'Linux'
@@ -558,7 +562,7 @@ resource aks 'Microsoft.ContainerService/managedClusters@2024-06-02-preview' = {
         vnetSubnetID: '${vnet.id}/subnets/subnet-aks'
       }
       {
-        name: 'cachepool'
+        name: cachePoolName
         count: cacheNodeCount
         vmSize: cacheVMSize
         osType: 'Linux'
@@ -567,7 +571,7 @@ resource aks 'Microsoft.ContainerService/managedClusters@2024-06-02-preview' = {
         vnetSubnetID: '${vnet.id}/subnets/subnet-aks'
       }
       {
-        name: 'gpupool'
+        name: gpuPoolName
         count: gpuNodeCount
         vmSize: gpuVMSize
         osType: 'Linux'

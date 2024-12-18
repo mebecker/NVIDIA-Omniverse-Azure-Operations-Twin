@@ -20,8 +20,8 @@ replicaCount: 1
 service:
   annotations:
     service.beta.kubernetes.io/azure-load-balancer-health-probe-request-path: /healthz
-    service.beta.kubernetes.io/azure-load-balancer-resource-group: MC_rg-nvidia_aks-nvidia_centralus
-    service.beta.kubernetes.io/azure-load-balancer-internal-subnet: subnet-aks
+    service.beta.kubernetes.io/azure-load-balancer-resource-group: ${AKS_MANAGED_RESOURCE_GROUP}
+    service.beta.kubernetes.io/azure-load-balancer-internal-subnet: ${AKS_SUBNET}
     service.beta.kubernetes.io/azure-load-balancer-internal: "true" 
     external-dns.alpha.kubernetes.io/access: "public"
   externalTrafficPolicy: Local
