@@ -1,17 +1,5 @@
 #! /bin/bash
-
-# Exit if required environment variables are not set
-set -u 
-: "$NGC_API_TOKEN"
-: "$DOMAIN_FILTER"
-: "$NGINX_HOST_NAME"
-: "$AKS_MANAGED_RESOURCE_GROUP"
-: "$AKS_SUBNET"
-: "$AGENT_POOL"
-: "$CACHE_POOL"
-: "$GPU_POOL"
-: "$API_INGRESS_URL"
-: "$STREAMING_BASE_DOMAIN"
+set -euxo pipefail
 
 SCRIPT_PATH=$(dirname "$(realpath "$0")")
 
@@ -53,3 +41,7 @@ helm upgrade --install --namespace omni-streaming -f $SCRIPT_PATH/working/kit-ap
 
 echo "Installing NVIDIA Application"
 helm upgrade --install --namespace omni-streaming -f $SCRIPT_PATH/working/kit-appstreaming-applications/values.yaml applications omniverse/kit-appstreaming-applications 
+
+k8sInternalLoadBalancerPrivateIP=$(az network lb show -g $(az aks show -g rg-nvidia -n aks-nvidia --query nodeResourceGroup -o tsv) -n kubernetes-internal --query "frontendIPConfigurations[0].privateIPAddress" -o tsv)
+
+az network private-dns record-set a add-record --ipv4-address $k8sInternalLoadBalancerPrivateIP --record-set-name api2 --resource-group $RESOURCE_GROUP --zone-name $PRIVATE_DNS_ZONE_NAME
