@@ -1,5 +1,5 @@
 
-export NGC_API_TOKEN=dThxdGhpYTFmYXE4dGRsZHZzaW1pdmtkZTk6ZmEzNDJhYzktNWM3ZC00OGMyLThhMzMtN2M4NGJhZTYwYjlk
+export NGC_API_TOKEN=
 
 az aks get-credentials --format azure --resource-group rg-nvidia --name aks-nvidia
 
