@@ -1,14 +1,22 @@
-# foo
+# Bicep Automation for Azure "Back-end" Components
+
+## Overview
+
+This automation is meant to significantly simplify the deployment and configuration of the "back-end" components of the solution. By "back-end" I mean the Virtual Network, Application Gateway, API Management, Azure Kubernetes Services, Key Vault, Log Analytics, etc.
+
+This is meant to be a reasonably complete deployment with Managed Identities used wherever possible, Log Analytics integration configured, etc. It is not however meant to be production-ready or security-hardened. For example, while the network is segmented to allow for separation of "public" and "private" access, the Key Vault and AKS data planes are open to the internet to facilite ease of use as a proof of concept / learning tool.
 
 ## Prerequisites
 
-1. AZ CLI
-2. Certbot
-3. OpenSSL
-4. Kubectl
-5. Kubelogin
+A number of tools are required in order to complete the installation and configuration. The primary ones include:
 
-Caveat - All of the automation was developed and tested in Ubuntu 24.04.01 running in WSL. There is nothing in the automation that specifically *requires* Linux, but running directly under Windows will likely require some modifications to commands, strings, etc.
+1. [AZ CLI](https://learn.microsoft.com/en-us/cli/azure/)
+2. [Certbot](https://certbot.eff.org/)
+3. [OpenSSL](https://www.openssl.org/) (Probably included in your Linux distro)
+4. [Kubectl](https://kubernetes.io/docs/reference/kubectl/)
+5. [Kubelogin](https://learn.microsoft.com/en-us/azure/aks/kubelogin-authentication)
+
+All of the automation was developed and tested in Ubuntu 24.04.01 running in [WSL](https://learn.microsoft.com/en-us/windows/wsl/about). There is nothing in the automation that specifically *requires* Linux, but running directly under Windows will likely require some modifications to commands, strings, etc.
 
 ## Deplyoment steps
 
