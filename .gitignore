@@ -45,6 +45,7 @@ deps/**/user.toml
 
 /bicep/parameters/ccci/*
 /k8s/working/*
+/k8s/exports.sh
 /kas_installation/scripts/external-dns/azure.json
 
 

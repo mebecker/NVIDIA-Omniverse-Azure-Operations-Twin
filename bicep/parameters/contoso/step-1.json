@@ -3,16 +3,16 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "location": {
-      "value": "centralus"
+      "value": "eastus2"
     },
     "keyVaultName": {
-      "value": "kv-nvidia-4"
+      "value": "kv-omni-mbecker"
     },
     "keyVaultOperatorId" :{
       "value": "08b01423-7f98-4ecd-9b75-3f6ce7706b7f"
     },
     "virtualNetworkName": {
-      "value": "vnet-nvidia"
+      "value": "vnet-omni-mbecker"
     },
     "vnetAddressPrefix": {
       "value": "10.2.0.0/16"
@@ -27,16 +27,16 @@
       "value": "10.2.2.0/24"
     },
     "nsgNameExternal": {
-      "value": "nsg-nvidia-external"
+      "value": "nsg-omni-mbecker-external"
     },
     "nsgNameInternal": {
-      "value": "nsg-nvidia-internal"
+      "value": "nsg-omni-mbecker-internal"
     },
     "backendDnsZoneName": {
       "value": "omniverse-backend.beckerobrien.com"
     },
     "logAnalyticsName": {
-      "value": "log-nvidia"
+      "value": "log-omni-mbecker"
     }        
   }
 }

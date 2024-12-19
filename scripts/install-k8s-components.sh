@@ -1,7 +1,8 @@
 #! /bin/bash
-set -euxo pipefail
+set -euxo pipefail # fail on unset parameters, error on any command failure, print each command before executing
 
 SCRIPT_PATH=$(dirname "$(realpath "$0")")
+source $SCRIPT_PATH/../exports.sh
 
 mkdir -p $SCRIPT_PATH/working/external-dns $SCRIPT_PATH/working/nginx-ingress-controller $SCRIPT_PATH/working/nginx-service $SCRIPT_PATH/working/memcached $SCRIPT_PATH/working/flux2 $SCRIPT_PATH/working/kit-appstreaming-manager $SCRIPT_PATH/working/kit-appstreaming-applications $SCRIPT_PATH/working/kit-appstreaming-rmcp
 

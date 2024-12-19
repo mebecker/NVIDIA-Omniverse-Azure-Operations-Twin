@@ -3,13 +3,13 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
       "location": {
-        "value": "centralus"
+        "value": "eastus2"
       },
       "virtualNetworkName": {
-        "value": "vnet-nvidia"
+        "value": "vnet-omni-mbecker"
       },
       "aksDnsPrefix" : {
-        "value": "contoso-omniverse"
+        "value": "omni-mbecker"
       },
       "agentVMSize" : {
         "value": "standard_d2s_v3"
@@ -18,7 +18,7 @@
         "value": "Standard_D8s_v3"
       },
       "gpuVMSize" : {
-        "value": "standard_d2s_v3"
+        "value": "Standard_NV6ads_A10_v5"
       },
       "agentPoolName": {
         "value":  "agentpool"
@@ -48,16 +48,16 @@
         "value": "http://api.omniverse-backend.beckerobrien.com"
       }, 
       "apiManagementServiceName": {
-        "value": "apim-nvidia"
+        "value": "apim-omni-mbecker"
       }, 
       "applicationGatewayName": {
-        "value": "appgw-nvidia"
+        "value": "appgw-omni-mbecker"
       }, 
       "keyVaultName": {
-        "value": "kv-nvidia-4"
+        "value": "kv-omni-mbecker"
       },       
       "aksClusterName": {
-        "value": "aks-nvidia"
+        "value": "aks-omni-mbecker"
       }, 
       "aksRbacAssignments" : {
         "value": [
@@ -83,7 +83,7 @@
         "value": "omniverse-backend.beckerobrien.com"
       },
       "logAnalyticsName": {
-        "value": "log-nvidia"
+        "value": "log-omni-mbecker"
       }          
     }
   }
