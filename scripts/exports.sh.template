@@ -1,6 +1,4 @@
 #! /bin/bash
-set -euxo pipefail # fail on unset parameters, error on any command failure, print each command before executing
-
 export BASE_DOMAIN=<your base domain - will be concatenated with the subdomains below>
 export DOMAIN_FILTER=$BASE_DOMAIN # used for external-dns service. should match BASE_DOMAIN but if necessary override here
 export AKS_MANAGED_RESOURCE_GROUP=<your managed resource group> # you can get this via "az aks show -g rg-nvidia -n aks-nvidia --query nodeResourceGroup" or from the properties blade of your aks resource.
@@ -17,3 +15,4 @@ export EMAIL=<your email - for letsencrypt>
 export KEYVAULT_NAME=<also get this from bicep parameters file> 
 export RESOURCE_GROUP_NAME=<resource group to deploy all resources to>
 export LOCATION=<azure region to deploy all resources to>
+export KUBECONFIG=/home/${USER}/.kube/config

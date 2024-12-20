@@ -1,29 +1,28 @@
 
-```bash
-export BASE_DOMAIN=<your-domain-name>
-export DOMAIN_FILTER=$BASE_DOMAIN
-export NGINX_HOST_NAME=123.appgw.omniverse-frontend.$BASE_DOMAIN
-export AKS_MANAGED_RESOURCE_GROUP=MC_rg-nvidia_aks-nvidia_centralus
-export AKS_SUBNET=subnet-aks
-export AGENT_POOL=agentpoolds
-export CACHE_POOL=cachepool
-export GPU_POOL=gpu-pool
-export NGC_API_TOKEN=<snip>
-export API_INGRESS_URL=api.omniverse-backend.$BASE_DOMAIN
-export STREAMING_BASE_DOMAIN=appgw.omniverse-frontend.$BASE_DOMAIN
-export AKS_RESOURCE_GROUP=rg-nvidia
-export AKS_CLUSTER_NAME=aks-nvidia
-```
+## Steps
 
-```bash
-az aks get-credentials --format azure --resource-group $AKS_RESOURCE_GROUP --name $AKS_CLUSTER_NAME
+All steps assume that your current path is the scripts folder in the root of this repo.
 
-export KUBECONFIG=/home/${USER}/.kube/config
+1. If you didn't already do so in the IAC deployment, create a copy of exports.sh.template named exports.sh and update all variable values appropriately.
 
-kubelogin convert-kubeconfig –l azurecli
-```
+2. Source exports.sh and log into az cli and kubectl
 
+    ```bash
+    source ./exports.sh
 
-```bash
-./k8s/install.sh
-```
+    az login
+    az aks get-credentials --format azure --resource-group $AKS_RESOURCE_GROUP --name $AKS_CLUSTER_NAME
+    kubelogin convert-kubeconfig –l azurecli
+    ```
+
+3. Make sure you're authenticated and talking to the cluster you expect to be 
+
+    ```bash
+    kubectl cluster-info
+    ```
+
+4. Run the install script and cross your fingers!
+
+    ```bash
+    ./install-k8s-components.sh
+    ```

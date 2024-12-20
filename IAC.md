@@ -20,9 +20,11 @@ All of the automation was developed and tested in Ubuntu 24.04.01 running in [WS
 
 ## Deplyoment steps
 
-1. Update all of the values in the json files in the ./bicep/paramaters/contoso folder as well the variables in /scripts/exports.sh
+1. Update all of the values in the json files in the ./bicep/paramaters/contoso folder
 
-2. Login to AZ CLI, create resource group and deploy Key Vault, MSIs, and VNet.
+2. Create a copy of exports.sh.template named exports.sh and update all variable values appropriately.
+
+3. Login to AZ CLI, create resource group and deploy Key Vault, MSIs, and VNet.
 
     ```bash
     source ./scripts/exports.sh
@@ -32,7 +34,7 @@ All of the automation was developed and tested in Ubuntu 24.04.01 running in [WS
     az deployment group create --resource-group $RESOURCE_GROUP_NAME --template-file ./bicep/step-1.bicep --parameters ./bicep/parameters/contoso/step-1.json  
     ```
 
-3. Create certificates and upload to Key Vault
+4. Create certificates and upload to Key Vault
 
     You can generate your certificates however you please. Howeer, in order to configure Application Gateway and API Management, the certificates need to be uploaded into Key Vault in PKCS 12 format.
 
@@ -46,25 +48,8 @@ All of the automation was developed and tested in Ubuntu 24.04.01 running in [WS
     ./certificates/create-and-upload-certificates.sh $DOMAINS $EMAIL $KEYVAULT_NAME
     ```
 
-4. Deploy Application Gateway, APIM, AKS. This step will take a while (up to 45 minutes) since APIM takes a long time to deploy.
+5. Deploy Application Gateway, APIM, AKS. This step will take a while (up to 45 minutes) since APIM takes a long time to deploy.
 
     ```bash
     az deployment group create --resource-group $RESOURCE_GROUP_NAME --template-file ./bicep/step-2.bicep --parameters ./bicep/parameters/contoso/step-2.json
     ```
-
-5. Deploy nginx-ingress-controller
-
-    Update ./k8s/nginx-ingress-controller/values-internal.yaml 
-
-    1. Set "service.beta.kubernetes.io/azure-load-balancer-resource-group" to the managed resource group for your AKS cluster. You can get that via `az aks show --resource-group $RESOURCE_GROUP_NAME --name $CLUSTER_NAME --
-query nodeResourceGroup`
-    2. Set "service.beta.kubernetes.io/azure-load-balancer-internal-subnet" to your AKS subnet
-    3. Run the following commands
-
-        ```bash
-        az aks get-credentials --format azure --resource-group rg-nvidia --name aks-nvidia
-        export KUBECONFIG=/home/${USER}/.kube/config
-        kubelogin convert-kubeconfig –l azurecli
-
-        helm upgrade -i nginx-ingress-controller-internal -n nginx-ingress-controller --create-namespace -f ./k8s/nginx-ingress-controller/values-internal.yaml bitnami/nginx-ingress-controller
-        ```
