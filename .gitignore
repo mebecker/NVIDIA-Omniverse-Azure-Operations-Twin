@@ -48,6 +48,7 @@ deps/**/user.toml
 /k8s/exports.sh
 /kas_installation/scripts/external-dns/azure.json
 
+/scripts/exports.sh
 
 
 

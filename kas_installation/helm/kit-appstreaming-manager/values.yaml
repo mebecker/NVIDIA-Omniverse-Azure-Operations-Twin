@@ -46,13 +46,8 @@ streaming:
     backend_applications_resolver_url: http://resolver
     backend_csp_cls: "nv.svc.streaming._csp.Generic"
     backend_csp_args:
-<<<<<<< Updated upstream
-      enable_wss: true
-      base_domain: "appgw.xxxx.com"
-=======
       enable_wss: false
       base_domain: "appgw.contoso-omniverse.com"
->>>>>>> Stashed changes
   image:
     repository: "nvcr.io/nvidia/omniverse/kit-appstreaming-manager"
     pullPolicy: Always
