@@ -21,7 +21,7 @@ policies:
   create: false
 rbac:
   create: true
-sourceController:ge
+sourceController:
   create: true
   affinity:
     nodeAffinity:

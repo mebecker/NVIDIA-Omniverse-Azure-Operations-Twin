@@ -21,6 +21,11 @@ envsubst < $TEMPLATE_FOLDER/kit-appstreaming-applications/values.yaml > $WORKING
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo update
 
+echo $NGC_API_TOKEN
+
+kubectl delete secret -n omni-streaming regcred --ignore-not-found
+kubectl create secret -n omni-streaming docker-registry regcred --docker-server=nvcr.io --docker-username='$oauthtoken' --docker-password=$NGC_API_TOKEN --dry-run=client -o json | kubectl apply -f -
+
 echo "Installing external-dns"
 kubectl apply -f $WORKING_FOLDER/external_dns-manifest.yaml
 
@@ -31,11 +36,15 @@ echo "Installing memcached"
 helm upgrade --install memcached oci://registry-1.docker.io/bitnamicharts/memcached -n omni-streaming --create-namespace -f $WORKING_FOLDER/memcached_values.yaml
 
 echo "Installing flux2"
-kubectl create namespace flux-operators
-helm upgrade --install --namespace flux-operators -f $WORKING_FOLDER/flux2_values.yaml fluxcd fluxcd-community/flux2
+helm upgrade --install --namespace flux-operators --create-namespace  -f $WORKING_FOLDER/flux2_values.yaml fluxcd fluxcd-community/flux2
 
 echo "Installing NVIDIA GPU Operator"
-kubectl create secret -n omni-streaming docker-registry regcred --docker-server=nvcr.io --docker-username='$oauthtoken' --docker-password=$NGC_API_TOKEN --dry-run=client -o json | kubectl apply -f -
+GPU_OPERATOR_NAME=$(helm ls -n gpu-operator --short)
+if [[ -n "$GPU_OPERATOR_NAME" ]]; then
+    echo "Uninstalling existing GPU Operator"
+    helm uninstall $GPU_OPERATOR_NAME -n gpu-operator
+fi
+
 helm install --wait --generate-name -n gpu-operator --create-namespace --repo https://helm.ngc.nvidia.com/nvidia gpu-operator --set driver.version=535.104.05
 
 echo "Installing NVIDIA RMCP"
