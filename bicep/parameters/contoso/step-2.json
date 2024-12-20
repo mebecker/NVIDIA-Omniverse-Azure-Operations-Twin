@@ -18,7 +18,7 @@
         "value": "Standard_D8s_v3"
       },
       "gpuVMSize" : {
-        "value": "Standard_NV6ads_A10_v5"
+        "value": "standard_d2s_v3"
       },
       "agentPoolName": {
         "value":  "agentpool"

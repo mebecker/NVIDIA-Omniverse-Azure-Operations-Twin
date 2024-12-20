@@ -19,12 +19,17 @@ envsubst < $TEMPLATE_FOLDER/kit-appstreaming-manager/values.yaml > $WORKING_FOLD
 envsubst < $TEMPLATE_FOLDER/kit-appstreaming-applications/values.yaml > $WORKING_FOLDER/kit-appstreaming-applications_values.yaml
 
 helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo remove omniverse
+helm repo add omniverse https://helm.ngc.nvidia.com/nvidia/omniverse/ --username='$oauthtoken' --password=$NGC_API_TOKEN
 helm repo update
 
-echo $NGC_API_TOKEN
+kubectl create namespace omni-streaming --dry-run=client -o yaml | kubectl apply -f -
+
 
 kubectl delete secret -n omni-streaming regcred --ignore-not-found
+kubectl delete secret -n omni-streaming ngc-omni-user --ignore-not-found
 kubectl create secret -n omni-streaming docker-registry regcred --docker-server=nvcr.io --docker-username='$oauthtoken' --docker-password=$NGC_API_TOKEN --dry-run=client -o json | kubectl apply -f -
+kubectl create secret -n omni-streaming generic ngc-omni-user --from-literal=username='$oauthtoken' --from-literal=password=$NGC_API_TOKEN --dry-run=client -o json | kubectl apply -f -
 
 echo "Installing external-dns"
 kubectl apply -f $WORKING_FOLDER/external_dns-manifest.yaml
@@ -56,6 +61,6 @@ helm upgrade --install --namespace omni-streaming -f $WORKING_FOLDER/kit-appstre
 echo "Installing NVIDIA Application"
 helm upgrade --install --namespace omni-streaming -f $WORKING_FOLDER/kit-appstreaming-applications_values.yaml applications omniverse/kit-appstreaming-applications 
 
-K8S_INTERNAL_LOAD_BALANCER_PRIVATE_IP=$(az network lb show -g $(az aks show -g rg-nvidia -n aks-nvidia --query nodeResourceGroup -o tsv) -n kubernetes-internal --query "frontendIPConfigurations[0].privateIPAddress" -o tsv)
+# K8S_INTERNAL_LOAD_BALANCER_PRIVATE_IP=$(az network lb show -g $(az aks show -g $RESOURCE_GROUP_NAME -n $AKS_CLUSTER_NAME --query nodeResourceGroup -o tsv) -n kubernetes-internal --query "frontendIPConfigurations[0].privateIPAddress" -o tsv)
 
-az network private-dns record-set a add-record --ipv4-address $K8S_INTERNAL_LOAD_BALANCER_PRIVATE_IP --record-set-name api2 --resource-group $RESOURCE_GROUP --zone-name $PRIVATE_DNS_ZONE_NAME
+# az network private-dns record-set a add-record --ipv4-address $K8S_INTERNAL_LOAD_BALANCER_PRIVATE_IP --record-set-name api --resource-group $RESOURCE_GROUP_NAME --zone-name $PRIVATE_DNS_ZONE_NAME
