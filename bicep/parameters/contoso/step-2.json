@@ -84,6 +84,9 @@
       },
       "logAnalyticsName": {
         "value": "log-omni-mbecker"
+      },
+      "acrName": {
+        "value": "acromnimbecker"
       }          
     }
   }
