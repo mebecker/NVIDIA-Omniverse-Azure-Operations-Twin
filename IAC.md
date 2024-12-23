@@ -10,7 +10,7 @@ This is meant to be a reasonably complete deployment with Managed Identities use
 
 A number of tools are required in order to complete the installation and configuration. The primary ones include:
 
-1. [AZ CLI](https://learn.microsoft.com/en-us/cli/azure/)
+1. [AZ CLI](https://learn.microsoft.com/en-us/cli/azure/) (Be sure to upgrade to the latest version via `az upgrade` -- at least 2.64.0)
 2. [Certbot](https://certbot.eff.org/)
 3. [OpenSSL](https://www.openssl.org/) (Probably included in your Linux distro)
 4. [Kubectl](https://kubernetes.io/docs/reference/kubectl/)

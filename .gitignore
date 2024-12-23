@@ -41,12 +41,10 @@ deps/**/user.toml
 **/web-app/dist/
 
 /certificates/*
-!/certificates/create-and-upload-certificates.sh
-
 /bicep/parameters/ccci/*
 /k8s/working/*
 /k8s/exports.sh
-/kas_installation/scripts/external-dns/azure.json
+/kas_installation/*
 
 /scripts/exports.sh
 
