@@ -9,7 +9,10 @@ WORKING_FOLDER=$SCRIPT_PATH/../k8s/working
 
 mkdir -p $WORKING_FOLDER
 
-envsubst < $TEMPLATE_FOLDER/external-dns/manifest.yaml > $WORKING_FOLDER/external_dns-manifest.yaml
+export SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+
+envsubst < $TEMPLATE_FOLDER/external-dns/manifest.yaml > $WORKING_FOLDER/external-dns_manifest.yaml
+envsubst < $TEMPLATE_FOLDER/external-dns/azure.json > $WORKING_FOLDER/azure.json
 envsubst < $TEMPLATE_FOLDER/nginx-ingress-controller/values-internal.yaml > $WORKING_FOLDER/nginx-ingress-controller_values-internal.yaml
 envsubst < $TEMPLATE_FOLDER/memcached/values.yaml > $WORKING_FOLDER/memcached_values.yaml
 envsubst < $TEMPLATE_FOLDER/flux2/values.yaml > $WORKING_FOLDER/flux2_values.yaml
@@ -31,7 +34,14 @@ kubectl create secret -n omni-streaming docker-registry regcred --docker-server=
 kubectl create secret -n omni-streaming generic ngc-omni-user --from-literal=username='$oauthtoken' --from-literal=password=$NGC_API_TOKEN --dry-run=client -o json | kubectl apply -f -
 
 echo "Installing external-dns"
-kubectl apply -f $WORKING_FOLDER/external_dns-manifest.yaml
+IDENTITY_CLIENT_ID=$(az identity show --name $AKS_IDENTITY_NAME --resource-group $RESOURCE_GROUP_NAME --query clientId --output tsv)
+kubectl delete secret --namespace "default" azure-config-file --ignore-not-found
+kubectl create secret generic azure-config-file --namespace "default" --from-file $WORKING_FOLDER/azure.json
+OIDC_ISSUER_URL="$(az aks show -n $AKS_CLUSTER_NAME -g $RESOURCE_GROUP_NAME --query "oidcIssuerProfile.issuerUrl" -otsv)"
+az identity federated-credential create --name $AKS_IDENTITY_NAME --identity-name $AKS_IDENTITY_NAME --resource-group $RESOURCE_GROUP_NAME --issuer "$OIDC_ISSUER_URL" --subject "system:serviceaccount:default:external-dns"
+kubectl apply -f $WORKING_FOLDER/external-dns_manifest.yaml
+kubectl patch serviceaccount external-dns --namespace "default" --patch "{\"metadata\": {\"annotations\": {\"azure.workload.identity/client-id\": \"${IDENTITY_CLIENT_ID}\"}}}"
+kubectl patch deployment external-dns --namespace "default" --patch "{\"spec\": {\"template\": {\"metadata\": {\"labels\": {\"azure.workload.identity/use\": \"true\"}}}}}"
 
 echo "Installing nginx-ingress-controller"
 helm upgrade --install nginx-ingress-controller-internal -n nginx-ingress-controller --create-namespace -f $WORKING_FOLDER/nginx-ingress-controller_values-internal.yaml bitnami/nginx-ingress-controller
@@ -62,4 +72,18 @@ helm upgrade --install --namespace omni-streaming -f $WORKING_FOLDER/kit-appstre
 
 K8S_INTERNAL_LOAD_BALANCER_PRIVATE_IP=$(az network lb show -g $(az aks show -g $RESOURCE_GROUP_NAME -n $AKS_CLUSTER_NAME --query nodeResourceGroup -o tsv) -n kubernetes-internal --query "frontendIPConfigurations[0].privateIPAddress" -o tsv)
 
-az network private-dns record-set a add-record --ipv4-address $K8S_INTERNAL_LOAD_BALANCER_PRIVATE_IP --record-set-name api --resource-group $RESOURCE_GROUP_NAME --zone-name $PRIVATE_DNS_ZONE_NAME
+recordExists=$(az network private-dns record-set a show \
+  --resource-group $RESOURCE_GROUP_NAME \
+  --zone-name $PRIVATE_DNS_ZONE_NAME \
+  --name api)
+
+if [ $recordExists -eq 0 ]; then
+    echo "Creating record"
+    az network private-dns record-set a add-record --ipv4-address $K8S_INTERNAL_LOAD_BALANCER_PRIVATE_IP --record-set-name api --resource-group $RESOURCE_GROUP_NAME --zone-name $PRIVATE_DNS_ZONE_NAME
+else
+    echo "Record already exists"
+fi
+
+ACR_TOKEN=$(az acr token create --name omnitoken --registry $ACR_NAME --scope-map _repositories_push_metadata_write --expiration $(date -u -d "+1 hour" +"%Y-%m-%dT%H:%M:%SZ") --query "credentials.passwords[0].value" --output tsv)
+
+kubectl create secret tls stream-tls-secret --cert=$SCRIPT_PATH/../certificates/live/$STREAMING_BASE_DOMAIN/fullchain.pem --key=$SCRIPT_PATH/../certificates/live/$STREAMING_BASE_DOMAIN/privkey.pem -n omni-streaming

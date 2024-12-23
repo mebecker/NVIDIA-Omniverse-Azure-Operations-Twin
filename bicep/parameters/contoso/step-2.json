@@ -82,6 +82,9 @@
       "backendDnsZoneName": {
         "value": "omniverse-backend.beckerobrien.com"
       },
+      "frontendDnsZoneName": {
+        "value": "omniverse-frontend.beckerobrien.com"
+      },      
       "logAnalyticsName": {
         "value": "log-omni-mbecker"
       },

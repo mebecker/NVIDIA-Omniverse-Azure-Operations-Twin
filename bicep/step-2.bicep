@@ -44,6 +44,7 @@ param logAnalyticsName string
 
 param aksRbacAssignments array = []
 
+param frontendDnsZoneName string
 param backendDnsZoneName string
 
 var appGwSslCertSecretName = replace(appGwSslCertName, '.', '-')
@@ -585,6 +586,14 @@ resource aks 'Microsoft.ContainerService/managedClusters@2024-06-02-preview' = {
       dnsServiceIP: '10.0.0.10'
       networkPolicy: 'none'
     }
+    securityProfile: {
+      workloadIdentity: {
+        enabled: true
+      }
+    }
+    oidcIssuerProfile: {
+      enabled: true
+    }
   }
 }
 
@@ -632,18 +641,48 @@ resource aksDiagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01
   }
 }
 
-resource zone 'Microsoft.Network/privateDnsZones@2024-06-01' existing = {
+resource privateDnsZone 'Microsoft.Network/privateDnsZones@2024-06-01' existing = {
   name: backendDnsZoneName
 }
 
-resource record 'Microsoft.Network/privateDnsZones/A@2024-06-01' = {
-  parent: zone
+resource apimRecord 'Microsoft.Network/privateDnsZones/A@2024-06-01' = {
+  parent: privateDnsZone
   name: 'apim-gw'
   properties: {
     ttl: 300
     aRecords: [
       {
         ipv4Address: apiManagementService.properties.privateIPAddresses[0]
+      }
+    ]
+  }
+}
+
+resource privateDnsZoneVnetLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2024-06-01' = {
+  parent: privateDnsZone
+  location: 'Global'
+  name: 'link-${vnet.name}'
+  properties: {
+    registrationEnabled: false
+    virtualNetwork: {
+      id: vnet.id
+    }
+  }
+}
+
+resource publicDnsZone 'Microsoft.Network/dnsZones@2018-05-01' = {
+  name: frontendDnsZoneName
+  location: 'global'
+}
+
+resource appgwRecord 'Microsoft.Network/dnsZones/A@2018-05-01' = {
+  parent: publicDnsZone
+  name: 'appgw'
+  properties: {
+    TTL: 300
+    ARecords: [
+      {
+        ipv4Address: publicIP.properties.ipAddress
       }
     ]
   }
@@ -671,6 +710,38 @@ resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
     principalType: 'ServicePrincipal'
   }
 }
+
+resource aksMsi 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-07-31-preview' = {
+  location: location
+  name: 'msi-aks'
+}
+
+var dnsZoneRoleAssignmentId = 'befefa01-2a29-4197-83a8-272ff33ce314'
+var dnsZoneRoleAssignmentName = guid(aksMsi.name, dnsZoneRoleAssignmentId, resourceGroup().id)
+
+resource dnsRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: dnsZoneRoleAssignmentName
+  scope: publicDnsZone
+  properties: {
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', dnsZoneRoleAssignmentId)
+    principalId: aksMsi.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+var readerRoleAssignmentId = 'acdd72a7-3385-48ef-bd42-f606fba81ae7'
+var readerRoleAssignmentName = guid(aksMsi.name, readerRoleAssignmentId, resourceGroup().id)
+
+resource readerRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: readerRoleAssignmentName
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', readerRoleAssignmentId)
+    principalId: aksMsi.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
 
 @minLength(5)
 @maxLength(50)
