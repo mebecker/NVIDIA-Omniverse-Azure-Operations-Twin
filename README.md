@@ -916,36 +916,26 @@ You can find links and details on the Helm Charts and Images needed in the [NGC 
 For installing the needed services, NVIDIA provides sample Helm `values.yaml` files and Custom Resource Definition (CRD)
 files used to configure in later steps the Kit Applications.
 
-- Create a new working directory `kas_installation`
-- Download the [Samples and Resources files](https://catalog.ngc.nvidia.com/orgs/nvidia/teams/omniverse/resources/kit-appstreaming-resources/files) 
-- Extract the downloaded files and place them in your working directory
-- Your folder structure should look similar to this with the downloaded files:
+- Find the sample Helm `values.yaml` files and Custom Resource Definition (CRD) files in k8s directory under root
 
 ```shell
+├── externla-dns
+├── └── azure.json
+├── └── manifest.yaml
 ├── flux2
 │   └── values.yaml
-├── kas-usd-viewer-application
-│   ├── Chart.yaml
-│   ├── charts
-│   ├── templates
-│   │   ├── application-profile-tgb.yaml
-│   │   ├── application-version.yaml
-│   │   └── application.yaml
-│   └── values.yaml
 ├── kit-appstreaming-applications
-│   ├── values.yaml
-│   └── values_aws_api_gateway.yaml
-├── kit-appstreaming-aws-nlb
-│   ├── values.yaml
-│   └── values_aws_api_gateway.yaml
+│   └── values.yaml
 ├── kit-appstreaming-manager
-│   ├── values_aws_tgb.yaml
-│   ├── values_generic.yaml
-│   └── values_generic_aws_api_gateway.yaml
+│   └── values.yaml
 ├── kit-appstreaming-rmcp
 │   └── values.yaml
-└── memcached
-    └── values.yml
+├── memcached
+│    └── values.yml
+├── nginx-ingress-controller
+│   └── values.yaml
+├── nginx-service
+│   └── values.yaml
 
 ```
 
@@ -1018,25 +1008,11 @@ Memcached is a critical component for enabling fast startup of Kit streaming ses
 It caches shader information that would otherwise need to be compiled at the startup of each container.
 You can find more information on Shader Caching in the [NVIDIA documentation](https://docs.omniverse.nvidia.com/ovas/latest/architecture/shader-cache.html#shared-shader-caching).
 
-In the next step the `values.yaml` for Memcached, which was provided with the downloaded sample files, needs to be modified 
-to ensure that the memcached Pods run on the desired memory optimized nodes (e.g `cachepool`). This is done by updating values
-which translate into [nodeSelector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) terms
-which help Kubernetes schedule(run) memcached pods on the AKS cachepool K8S worker nodes.
 
-- Open the downloaded `values.yaml` file for memcached in your working directory e.g. `helm/memcached/values.yml`
-- In the file you will find the following section:
 
-```yaml
-nodeSelector:
-  NodeGroup: cache
-```
+The `values.yaml` for Memcached can be found in k8s/templates/memcached folder. The additional worker nodes `agentpool` created in this setup have the [Kubernetes Label](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/) `agentpool=cachepool` set for them. You can find the labels of your worker nodes by executing `kubectl get nodes --show-labels | grep agentpool` 
+and looking for the label value, or by using `kubectl describe` on your worker node. In the 'values.yaml' fileChange the key value `${CACHE_POOL}` to 'cachepool'
 
-- Rename the key `NodeGroup` to `agentpool`
-- Rename the value `cache` to `cachepool`
-
-The additional worker nodes `agentpool` created in this setup have the [Kubernetes Label](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/) 
-`agentpool=cachepool` set for them. You can find the labels of your worker nodes by executing `kubectl get nodes --show-labels | grep agentpool` 
-and looking for the label value, or by using `kubectl describe` on your worker node.
 
 <details>
   <summary>Your final values.yaml file for memcached should look now similar to this:</summary>
@@ -1071,7 +1047,7 @@ architecture: high-availability
 
 After above change, you are now ready to install memcached on your Kubernetes cluster.
 
-- Ensure you are in your working directory to reference the `values.yaml` file you modified in the next steps helm installation.
+- Ensure you are in your working directory to reference the `values.yaml` file during installation.
 - Please follow [these instructions](https://docs.omniverse.nvidia.com/ovas/latest/deployments/infra/installation.html#install-memcached-service)
 to install the memcached service.
 
@@ -1111,31 +1087,15 @@ Memcached can be accessed via port 11211 on the following DNS name from within y
 The components of the CNCF project Flux are used to manage the deployment of streaming applications. 
 This approach makes the deployment and the management of Helm repositories and the resources more declarative and easier to manage.
 
-In the next step the `values.yaml` for Flux2, which was provided with the downloaded sample files, needs to be modified 
-to ensure that the Flux Pods run on the desired Nodes (our default agentpool/CPU nodes). This is done by updating values
-which translate into [nodeSelector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) terms
+The `values.yaml` for Flux2 can be found in k8s/templates/flux2 folder. To ensure that the Flux pods run on the desired Nodes (our default agentpool/CPU nodes) we need to update values which translate into [nodeSelector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) terms
 which help Kubernetes schedule(run) Flux2 pods on default CPU worker nodes.
 
-- Open the downloaded `values.yaml` file for flux in your working directory e.g. `helm/flux2/values.yaml`
-- Update **both** sections for the `helmController` and the `sourceController` in the file:
 
-```yaml
-        nodeSelectorTerms:
-        - matchExpressions:
-          - key: NodeGroup
-            operator: In
-            values:
-            - system
-```
-- Change the `key` from `NodeGroup` to `agentpool`
-- Change the `values` from `system` to `agentpool`
-
-The default CPU worker nodes `agentpool` created in this setup have the [Kubernetes Label](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/) 
-`agentpool=agentpool` set for them. You can find the labels of your worker nodes by executing `kubectl get nodes --show-labels | grep agentpool` 
-and looking for the label value, or by using `kubectl describe` on your worker node.
+The default CPU worker nodes `agentpool` created in this setup have the [Kubernetes Label](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/) `agentpool=agentpool` set for them. You can find the labels of your worker nodes by executing `kubectl get nodes --show-labels | grep agentpool` 
+and looking for the label value, or by using `kubectl describe` on your worker node.  In the 'values.yaml' file Change the key value `${AGENT_POOL}` to 'agentpool'
 
 <details>
-  <summary>Your final values.yaml file for Flux should look now similar to this:</summary>
+  <summary>The final values.yaml file for Flux2 should look similar to this:</summary>
   
 ```yaml
 helmController:
@@ -1178,7 +1138,7 @@ sourceController:
 
 After above change, you are now ready to install Flux2 on your Kubernetes cluster.
 
-- Ensure you are your working directory to reference the `values.yaml` file you modified in the next steps helm installation.
+- Ensure you are in the working directory to reference the `values.yaml` file during helm installation.
 - Please follow [these instructions](https://docs.omniverse.nvidia.com/ovas/latest/deployments/infra/installation.html#install-flux-helm-controller-and-flux-source-controller)
 to install the Flux Helm Controller and Flux Source Controller.
 
@@ -1214,37 +1174,32 @@ The NVIDIA Omniverse Resource Management Control Plane Service is used to manage
 - Follow these [steps](https://docs.omniverse.nvidia.com/ovas/latest/deployments/infra/installation.html#configuring-the-service) to create an additional secret `ngc-omni-user`.
 
 
-In the next step the `values.yaml` for RMCP, which was provided with the downloaded sample files, needs to be modified 
-to ensure that the RMCP Pods run on the desired default nodes (e.g `agentpool`).
-
-- Open the downloaded `values.yaml` file for RMCP in your working directory e.g. `helm/kit-appstreaming-rmcp/values.yml`
-- In the file you will find the following section:
+The `values.yaml` for RMCP, which is provided in k8s/templates/kit-appstreaming-rmcp folder, needs to be modified to ensure that the RMCP Pods run on the desired default nodes (e.g `agentpool`). Open the `values.yaml` file and locate the following section in the file:
 
 ```yaml
         nodeSelectorTerms:
           - matchExpressions:
-              - key: NodeGroup
+              - key: agentpool
                 operator: In
                 values:
-                  - System
+                  - ${AGENT_POOL}
 ```
 
-- Change the key `NodeGroup` to `agentpool`
-- Change the value `System` to `agentpool`
+Change the value `${AGENT_POOL}` to the name of the AKS agent node pool. This node pool is given the name of `agentpool` in the instructions provided to create AKS service elsewhere in this document.
 
 You can integrate the API services with Prometheus. In this guide, Prometheus integration is assumed to be **deactivated**
 for simplicity. Follow below steps to deactivate the Prometheus integration:
 
-- In the file you will find the following section:
+- In the file you will find the following section where Prometheus integration is disabled:
 
 ```yaml
   monitoring:
     # -- Enables the creation of ServiceMonitor resource.
-    enabled: true
+    enabled: false
     # -- Prometheus namespace.
     prometheusNamespace: "omni-streaming"
 ```
-- Change `enabled` to `false`
+
 
 
 <details>
@@ -1435,15 +1390,16 @@ $ docker pull <registry-name>.azurecr.io/<image-name>
 
 At a minimum, the following values need to be changed to suit your environment. Note: Instructions for this are specified in the following steps.
 
-* **helm/nginx-ingress-controller/values-internal.yaml** 
+* **k8s/nginx-ingress-controller/values-internal.yaml** 
 ```yaml  
-service.beta.kubernetes.io/azure-load-balancer-resource-group: <name of resource group>
+service.beta.kubernetes.io/azure-load-balancer-resource-group: ${AKS_MANAGED_RESOURCE_GROUP} # Replace the name of the managed resource group name whihc typically starts with MC_
+service.beta.kubernetes.io/azure-load-balancer-internal-subnet: ${AKS_SUBNET} # Replace wth the name of the subnet where AKS cluster is running
 ```
-  * **helm/kit-appstreaming-applications/values.yaml**
+  * **k8s/kit-appstreaming-applications/values.yaml**
 ```yaml
-host: api.<private DNS zone>
+host: ${API_INGRESS_URL} # Replace with the value equal to api.<Private DNS Zone>
 ...
-repository: <kit appstreaming applications container URL>
+repository: <kit appstreaming applications container URL> 
 ```
 
 * **helm/kit-appstreaming-manager/values.yaml**

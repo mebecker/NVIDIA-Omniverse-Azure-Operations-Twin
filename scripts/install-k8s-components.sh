@@ -72,13 +72,12 @@ helm upgrade --install --namespace omni-streaming -f $WORKING_FOLDER/kit-appstre
 
 K8S_INTERNAL_LOAD_BALANCER_PRIVATE_IP=$(az network lb show -g $(az aks show -g $RESOURCE_GROUP_NAME -n $AKS_CLUSTER_NAME --query nodeResourceGroup -o tsv) -n kubernetes-internal --query "frontendIPConfigurations[0].privateIPAddress" -o tsv)
 
-recordExists=$(az network private-dns record-set a list --resource-group $RESOURCE_GROUP_NAME --zone-name $PRIVATE_DNS_ZONE_NAME --query [].name | grep -w "api")
-
-if [ -z $recordExists ]; then
-    echo "Creating record"
-    az network private-dns record-set a add-record --ipv4-address $K8S_INTERNAL_LOAD_BALANCER_PRIVATE_IP --record-set-name api --resource-group $RESOURCE_GROUP_NAME --zone-name $PRIVATE_DNS_ZONE_NAME
+records=$(az network private-dns record-set a list --resource-group $RESOURCE_GROUP_NAME --zone-name $PRIVATE_DNS_ZONE_NAME --query [].name)
+if  echo $records | grep -w api; then 
+    echo 'Record exists'
 else
-    echo "Record already exists"
+    echo 'Creating record'
+    az network private-dns record-set a add-record --ipv4-address $K8S_INTERNAL_LOAD_BALANCER_PRIVATE_IP --record-set-name api --resource-group $RESOURCE_GROUP_NAME --zone-name $PRIVATE_DNS_ZONE_NAME
 fi
 
 ACR_TOKEN=$(az acr token create --name omnitoken --registry $ACR_NAME --scope-map _repositories_push_metadata_write --expiration $(date -u -d "+1 hour" +"%Y-%m-%dT%H:%M:%SZ") --query "credentials.passwords[0].value" --output tsv)
