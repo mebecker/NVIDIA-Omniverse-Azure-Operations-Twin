@@ -44,5 +44,6 @@ TOKEN_PWD=$(az acr token create --name omnitoken --registry $ACR_NAME --scope-ma
 
 echo $TOKEN_PWD | docker login --username $TOKEN_NAME --password-stdin $ACR_NAME.azurecr.io
 
-docker tag kit_app_template $ACR_NAME.azurecr.io/usd-viewer-contoso:0.1.0
-docker push $ACR_NAME.azurecr.io/usd-viewer-contoso:0.1.0
+docker tag kit_app_template $ACR_NAME.azurecr.io/$KIT_APP_NAME:$KIT_APP_VERSION
+docker push $ACR_NAME.azurecr.io/$KIT_APP_NAME:$KIT_APP_VERSION
+

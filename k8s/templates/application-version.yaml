@@ -1,0 +1,13 @@
+apiVersion: omniverse.nvidia.com/v1
+kind: ApplicationVersion
+metadata:
+  name: ${KIT_APP_NAME}-${KIT_APP_VERSION}
+  labels:
+    app: ${KIT_APP_NAME}
+    applicationName: ${KIT_APP_NAME}
+    version: '${KIT_APP_VERSION}'
+spec:
+  helm_chart: ngc-omniverse/kit-appstreaming-session
+  helm_chart_version: '1.8.0'
+  container: acromnistreaming.azurecr.io/usd-viewer-ccci
+  container_version: '${KIT_APP_VERSION}'

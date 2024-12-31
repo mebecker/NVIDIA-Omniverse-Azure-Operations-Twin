@@ -777,3 +777,26 @@ resource acr 'Microsoft.ContainerRegistry/registries@2021-09-01' = {
 
 output acrLoginServer string = acr.properties.loginServer
 
+resource acrDiagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: 'Log Analytics'
+  scope: acr
+  properties: {
+    workspaceId: logAnalytics.id
+    logs: [
+      {
+        category: 'ContainerRegistryRepositoryEvents'
+        enabled: true
+      }
+      {
+        category: 'ContainerRegistryLoginEvents'
+        enabled: true
+      }
+    ]
+    metrics: [
+      {
+        category: 'AllMetrics'
+        enabled: true
+      }
+    ]
+  }
+}

@@ -46,7 +46,7 @@ streaming:
     backend_applications_resolver_url: http://resolver
     backend_csp_cls: "nv.svc.streaming._csp.Generic"
     backend_csp_args:
-      enable_wss: false
+      enable_wss: true
       base_domain: "${STREAMING_BASE_DOMAIN}"
   image:
     repository: "nvcr.io/nvidia/omniverse/kit-appstreaming-manager"

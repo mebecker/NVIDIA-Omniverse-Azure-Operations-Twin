@@ -19,6 +19,10 @@ envsubst < $TEMPLATE_FOLDER/flux2/values.yaml > $WORKING_FOLDER/flux2_values.yam
 envsubst < $TEMPLATE_FOLDER/kit-appstreaming-rmcp/values.yaml > $WORKING_FOLDER/kit-appstreaming-rmcp_values.yaml
 envsubst < $TEMPLATE_FOLDER/kit-appstreaming-manager/values.yaml > $WORKING_FOLDER/kit-appstreaming-manager_values.yaml
 envsubst < $TEMPLATE_FOLDER/kit-appstreaming-applications/values.yaml > $WORKING_FOLDER/kit-appstreaming-applications_values.yaml
+envsubst < $TEMPLATE_FOLDER/application.yaml > $WORKING_FOLDER/application.yaml
+envsubst < $TEMPLATE_FOLDER/application-version.yaml > $WORKING_FOLDER/application-version.yaml
+envsubst < $TEMPLATE_FOLDER/application-profile-wss.yaml > $WORKING_FOLDER/application-profile-wss.yaml
+
 
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo remove omniverse
@@ -56,7 +60,8 @@ echo "Installing NVIDIA GPU Operator"
 GPU_OPERATOR_NAME=$(helm ls -n gpu-operator --short)
 if [[ -n "$GPU_OPERATOR_NAME" ]]; then
     echo "Uninstalling existing GPU Operator"
-    helm uninstall $GPU_OPERATOR_NAME -n gpu-operator
+    helm uninstall $GPU_OPERATOR_NAME -n gpu-operator --no-hooks
+    kubectl delete --all pods --namespace=gpu-operator --force --grace-period=0                                                                                        
 fi
 
 helm install --wait --generate-name -n gpu-operator --create-namespace --repo https://helm.ngc.nvidia.com/nvidia gpu-operator --set driver.version=535.104.05
@@ -80,6 +85,14 @@ else
     az network private-dns record-set a add-record --ipv4-address $K8S_INTERNAL_LOAD_BALANCER_PRIVATE_IP --record-set-name api --resource-group $RESOURCE_GROUP_NAME --zone-name $PRIVATE_DNS_ZONE_NAME
 fi
 
-ACR_TOKEN=$(az acr token create --name omnitoken --registry $ACR_NAME --scope-map _repositories_push_metadata_write --expiration $(date -u -d "+1 hour" +"%Y-%m-%dT%H:%M:%SZ") --query "credentials.passwords[0].value" --output tsv)
+kubectl delete secret -n omni-streaming stream-tls-secret --ignore-not-found
+kubectl create secret -n omni-streaming tls stream-tls-secret --cert=$SCRIPT_PATH/../certificates/live/$STREAMING_BASE_DOMAIN/fullchain.pem --key=$SCRIPT_PATH/../certificates/live/$STREAMING_BASE_DOMAIN/privkey.pem
 
-kubectl create secret tls stream-tls-secret --cert=$SCRIPT_PATH/../certificates/live/$STREAMING_BASE_DOMAIN/fullchain.pem --key=$SCRIPT_PATH/../certificates/live/$STREAMING_BASE_DOMAIN/privkey.pem -n omni-streaming
+ACR_TOKEN=$(az acr token create --name omnitoken --registry $ACR_NAME --scope-map _repositories_push_metadata_write --expiration $(date -u -d "+1 year" +"%Y-%m-%dT%H:%M:%SZ") --query "credentials.passwords[0].value" --output tsv)
+kubectl delete secret -n omni-streaming myregcred --ignore-not-found
+kubectl create secret -n omni-streaming docker-registry myregcred --docker-server=$ACR_NAME.azurecr.io --docker-username='$ACR_NAME' --docker-password=$ACR_TOKEN --dry-run=client -o json | kubectl apply -f -
+
+
+kubectl apply -n omni-streaming -f $WORKING_FOLDER/application.yaml
+kubectl apply -n omni-streaming -f $WORKING_FOLDER/application-version.yaml
+kubectl apply -n omni-streaming -f $WORKING_FOLDER/application-profile-wss.yaml
