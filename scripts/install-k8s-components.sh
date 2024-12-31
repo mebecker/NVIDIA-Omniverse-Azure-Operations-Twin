@@ -30,7 +30,7 @@ helm repo add omniverse https://helm.ngc.nvidia.com/nvidia/omniverse/ --username
 helm repo update
 
 kubectl create namespace omni-streaming --dry-run=client -o yaml | kubectl apply -f -
-
+kubectl apply -n omni-streaming -f SCRIPT_PATH/../k8s/templates/ngc-omniverse.yaml 
 
 kubectl delete secret -n omni-streaming regcred --ignore-not-found
 kubectl delete secret -n omni-streaming ngc-omni-user --ignore-not-found
@@ -90,9 +90,11 @@ kubectl create secret -n omni-streaming tls stream-tls-secret --cert=$SCRIPT_PAT
 
 ACR_TOKEN=$(az acr token create --name omnitoken --registry $ACR_NAME --scope-map _repositories_push_metadata_write --expiration $(date -u -d "+1 year" +"%Y-%m-%dT%H:%M:%SZ") --query "credentials.passwords[0].value" --output tsv)
 kubectl delete secret -n omni-streaming myregcred --ignore-not-found
-kubectl create secret -n omni-streaming docker-registry myregcred --docker-server=$ACR_NAME.azurecr.io --docker-username='$ACR_NAME' --docker-password=$ACR_TOKEN --dry-run=client -o json | kubectl apply -f -
+kubectl create secret -n omni-streaming docker-registry myregcred --docker-server=$ACR_NAME.azurecr.io --docker-username=omnitoken --docker-password=$ACR_TOKEN --dry-run=client -o json | kubectl apply -f -
 
-
+kubectl delete -n omni-streaming -f $WORKING_FOLDER/application.yaml
 kubectl apply -n omni-streaming -f $WORKING_FOLDER/application.yaml
+kubectl delete -n omni-streaming -f $WORKING_FOLDER/application-version.yaml
 kubectl apply -n omni-streaming -f $WORKING_FOLDER/application-version.yaml
+kubectl delete -n omni-streaming -f $WORKING_FOLDER/application-profile-wss.yaml
 kubectl apply -n omni-streaming -f $WORKING_FOLDER/application-profile-wss.yaml
