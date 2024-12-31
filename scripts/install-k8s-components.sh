@@ -88,9 +88,10 @@ fi
 kubectl delete secret -n omni-streaming stream-tls-secret --ignore-not-found
 kubectl create secret -n omni-streaming tls stream-tls-secret --cert=$SCRIPT_PATH/../certificates/live/$STREAMING_BASE_DOMAIN/fullchain.pem --key=$SCRIPT_PATH/../certificates/live/$STREAMING_BASE_DOMAIN/privkey.pem
 
-ACR_TOKEN=$(az acr token create --name omnitoken --registry $ACR_NAME --scope-map _repositories_push_metadata_write --expiration $(date -u -d "+1 year" +"%Y-%m-%dT%H:%M:%SZ") --query "credentials.passwords[0].value" --output tsv)
+TOKEN_NAME=omniverse01-push
+ACR_TOKEN=$(az acr token create --name $TOKEN_NAME --registry $ACR_NAME --scope-map _repositories_push_metadata_write --expiration $(date -u -d "+1 year" +"%Y-%m-%dT%H:%M:%SZ") --query "credentials.passwords[0].value" --output tsv)
 kubectl delete secret -n omni-streaming myregcred --ignore-not-found
-kubectl create secret -n omni-streaming docker-registry myregcred --docker-server=$ACR_NAME.azurecr.io --docker-username=omnitoken --docker-password=$ACR_TOKEN --dry-run=client -o json | kubectl apply -f -
+kubectl create secret -n omni-streaming docker-registry myregcred --docker-server=$ACR_NAME.azurecr.io --docker-username=$TOKEN_NAME --docker-password=$ACR_TOKEN --dry-run=client -o json | kubectl apply -f -
 
 kubectl delete -n omni-streaming -f $WORKING_FOLDER/application.yaml
 kubectl apply -n omni-streaming -f $WORKING_FOLDER/application.yaml
