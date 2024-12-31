@@ -3,6 +3,7 @@ set -euo pipefail # fail on unset parameters, error on any command failure, prin
 
 SCRIPT_PATH=$(dirname "$(realpath "$0")")
 KIT_APP_WORKING_DIR=$(mktemp -d)
+echo "Created temporary working directory $KIT_APP_WORKING_DIR"
 
 source $SCRIPT_PATH/exports.sh
 
@@ -47,3 +48,5 @@ echo $TOKEN_PWD | docker login --username $TOKEN_NAME --password-stdin $ACR_NAME
 docker tag kit_app_template $ACR_NAME.azurecr.io/$KIT_APP_NAME:$KIT_APP_VERSION
 docker push $ACR_NAME.azurecr.io/$KIT_APP_NAME:$KIT_APP_VERSION
 
+echo "Removing temporary working directory $KIT_APP_WORKING_DIR"
+rm -rf $KIT_APP_WORKING_DIR
