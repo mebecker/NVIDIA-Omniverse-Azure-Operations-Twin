@@ -30,7 +30,7 @@ helm repo add omniverse https://helm.ngc.nvidia.com/nvidia/omniverse/ --username
 helm repo update
 
 kubectl create namespace omni-streaming --dry-run=client -o yaml | kubectl apply -f -
-kubectl apply -n omni-streaming -f SCRIPT_PATH/../k8s/templates/ngc-omniverse.yaml 
+kubectl apply -n omni-streaming -f $SCRIPT_PATH/../k8s/templates/ngc-omniverse.yaml 
 
 kubectl delete secret -n omni-streaming regcred --ignore-not-found
 kubectl delete secret -n omni-streaming ngc-omni-user --ignore-not-found
