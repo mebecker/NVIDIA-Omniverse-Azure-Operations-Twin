@@ -19,13 +19,16 @@ helm repo update
 
 kubectl create namespace omni-streaming --dry-run=client -o yaml | kubectl apply -f -
 
-kubectl create secret -n omni-streaming docker-registry regcred --docker-server=nvcr.io --docker-username='$oauthtoken' --docker-password=$NGC_API_TOKEN --save-config --dry-run=client -o json | kubectl apply -f -
-kubectl create secret -n omni-streaming generic ngc-omni-user --from-literal=username='$oauthtoken' --from-literal=password=$NGC_API_TOKEN --save-config --dry-run=client -o json | kubectl apply -f -
+kubectl create secret -n omni-streaming docker-registry regcred --docker-server=nvcr.io --docker-username='$oauthtoken' --docker-password=$NGC_API_TOKEN \
+    --save-config --dry-run=client -o json | kubectl apply -f -
+kubectl create secret -n omni-streaming generic ngc-omni-user --from-literal=username='$oauthtoken' --from-literal=password=$NGC_API_TOKEN \
+    --save-config --dry-run=client -o json | kubectl apply -f -
 
 echo "Installing external-dns"
 envsubst < $TEMPLATE_FOLDER/external-dns/manifest.yaml > $WORKING_FOLDER/external-dns_manifest.yaml
 envsubst < $TEMPLATE_FOLDER/external-dns/azure.json > $WORKING_FOLDER/azure.json
-kubectl create secret generic azure-config-file --namespace "default" --from-file $WORKING_FOLDER/azure.json --save-config --dry-run=client -o json | kubectl apply -f -
+kubectl create secret generic azure-config-file --namespace "default" --from-file $WORKING_FOLDER/azure.json \
+    --save-config --dry-run=client -o json | kubectl apply -f -
 OIDC_ISSUER_URL="$(az aks show -n $AKS_CLUSTER_NAME -g $RESOURCE_GROUP_NAME --query "oidcIssuerProfile.issuerUrl" -otsv)"
 az identity federated-credential create --name $AKS_IDENTITY_NAME --identity-name $AKS_IDENTITY_NAME --resource-group $RESOURCE_GROUP_NAME --issuer "$OIDC_ISSUER_URL" --subject "system:serviceaccount:default:external-dns"
 kubectl apply -f $WORKING_FOLDER/external-dns_manifest.yaml
@@ -34,7 +37,7 @@ echo "Installing nginx-ingress-controller"
 envsubst < $TEMPLATE_FOLDER/nginx-ingress-controller/values-internal.yaml > $WORKING_FOLDER/nginx-ingress-controller_values-internal.yaml
 helm upgrade --install nginx-ingress-controller-internal -n nginx-ingress-controller --create-namespace -f $WORKING_FOLDER/nginx-ingress-controller_values-internal.yaml bitnami/nginx-ingress-controller
 
-echo "Giving nginx-ingresss-controller 1 miunte to create internal load balancer. Override this behavior by setting the environment variable NGINX_WAIT_TIME to 0"
+echo "Giving nginx-ingresss-controller $NGINX_WAIT_TIME seconds to create internal load balancer. Override this behavior by setting the environment variable NGINX_WAIT_TIME to 0"
 sleep $NGINX_WAIT_TIME
 
 K8S_INTERNAL_LOAD_BALANCER_PRIVATE_IP=$(az network lb show -g $(az aks show -g $RESOURCE_GROUP_NAME -n $AKS_CLUSTER_NAME --query nodeResourceGroup -o tsv) -n kubernetes-internal --query "frontendIPConfigurations[0].privateIPAddress" -o tsv)
@@ -79,7 +82,8 @@ envsubst < $TEMPLATE_FOLDER/kit-appstreaming-applications/values.yaml > $WORKING
 helm upgrade --install --namespace omni-streaming -f $WORKING_FOLDER/kit-appstreaming-applications_values.yaml applications omniverse/kit-appstreaming-applications 
 TOKEN_NAME=omniverse01-pull
 ACR_TOKEN=$(az acr token create --name $TOKEN_NAME --registry $ACR_NAME --scope-map _repositories_push_metadata_write --expiration $(date -u -d "+1 year" +"%Y-%m-%dT%H:%M:%SZ") --query "credentials.passwords[0].value" --output tsv)
-kubectl create secret -n omni-streaming docker-registry myregcred --docker-server=$ACR_NAME.azurecr.io --docker-username=$TOKEN_NAME --docker-password=$ACR_TOKEN --save-config --dry-run=client -o json | kubectl apply -f -
+kubectl create secret -n omni-streaming docker-registry myregcred --docker-server=$ACR_NAME.azurecr.io --docker-username=$TOKEN_NAME --docker-password=$ACR_TOKEN \
+    --save-config --dry-run=client -o json | kubectl apply -f -
 
 echo "Installing application CRD"
 envsubst < $TEMPLATE_FOLDER/application.yaml > $WORKING_FOLDER/application.yaml
@@ -91,5 +95,6 @@ kubectl apply -n omni-streaming -f $WORKING_FOLDER/application-version.yaml
 
 echo "Installing applicationprofile CRD"
 envsubst < $TEMPLATE_FOLDER/application-profile-wss.yaml > $WORKING_FOLDER/application-profile-wss.yaml
-kubectl create secret -n omni-streaming tls stream-tls-secret --cert=$SCRIPT_PATH/../certificates/live/$STREAMING_BASE_DOMAIN/fullchain.pem --key=$SCRIPT_PATH/../certificates/live/$STREAMING_BASE_DOMAIN/privkey.pem --save-config --dry-run=client -o json | kubectl apply -f -
+kubectl create secret -n omni-streaming tls stream-tls-secret --cert=$SCRIPT_PATH/../certificates/live/$STREAMING_BASE_DOMAIN/fullchain.pem --key=$SCRIPT_PATH/../certificates/live/$STREAMING_BASE_DOMAIN/privkey.pem \
+    --save-config --dry-run=client -o json | kubectl apply -f -
 kubectl apply -n omni-streaming -f $WORKING_FOLDER/application-profile-wss.yaml
