@@ -17,30 +17,38 @@ helm repo remove omniverse
 helm repo add omniverse https://helm.ngc.nvidia.com/nvidia/omniverse/ --username='$oauthtoken' --password=$NGC_API_TOKEN
 helm repo update
 
+AKS_INFO=$(az aks show -n $AKS_CLUSTER_NAME -g $RESOURCE_GROUP_NAME --query "{nodeResourceGroup:nodeResourceGroup, issuerUrl:oidcIssuerProfile.issuerUrl}")
+
 kubectl create namespace omni-streaming --dry-run=client -o yaml | kubectl apply -f -
 
 kubectl create secret -n omni-streaming docker-registry regcred --docker-server=nvcr.io --docker-username='$oauthtoken' --docker-password=$NGC_API_TOKEN \
     --save-config --dry-run=client -o json | kubectl apply -f -
+
 kubectl create secret -n omni-streaming generic ngc-omni-user --from-literal=username='$oauthtoken' --from-literal=password=$NGC_API_TOKEN \
     --save-config --dry-run=client -o json | kubectl apply -f -
 
 echo "Installing external-dns"
 envsubst < $TEMPLATE_FOLDER/external-dns/manifest.yaml > $WORKING_FOLDER/external-dns_manifest.yaml
 envsubst < $TEMPLATE_FOLDER/external-dns/azure.json > $WORKING_FOLDER/azure.json
+
 kubectl create secret generic azure-config-file --namespace "default" --from-file $WORKING_FOLDER/azure.json \
     --save-config --dry-run=client -o json | kubectl apply -f -
-OIDC_ISSUER_URL="$(az aks show -n $AKS_CLUSTER_NAME -g $RESOURCE_GROUP_NAME --query "oidcIssuerProfile.issuerUrl" -otsv)"
-az identity federated-credential create --name $AKS_IDENTITY_NAME --identity-name $AKS_IDENTITY_NAME --resource-group $RESOURCE_GROUP_NAME --issuer "$OIDC_ISSUER_URL" --subject "system:serviceaccount:default:external-dns"
+
+az identity federated-credential create --name $AKS_IDENTITY_NAME --identity-name $AKS_IDENTITY_NAME \
+    --resource-group $RESOURCE_GROUP_NAME --issuer $(echo $AKS_INFO | jq -r .issuerUrl) --subject "system:serviceaccount:default:external-dns"
+
 kubectl apply -f $WORKING_FOLDER/external-dns_manifest.yaml
 
 echo "Installing nginx-ingress-controller"
 envsubst < $TEMPLATE_FOLDER/nginx-ingress-controller/values-internal.yaml > $WORKING_FOLDER/nginx-ingress-controller_values-internal.yaml
-helm upgrade --install nginx-ingress-controller-internal -n nginx-ingress-controller --create-namespace -f $WORKING_FOLDER/nginx-ingress-controller_values-internal.yaml bitnami/nginx-ingress-controller
+
+helm upgrade --install nginx-ingress-controller-internal -n nginx-ingress-controller --create-namespace \
+    -f $WORKING_FOLDER/nginx-ingress-controller_values-internal.yaml bitnami/nginx-ingress-controller
 
 echo "Giving nginx-ingresss-controller $NGINX_WAIT_TIME seconds to create internal load balancer. Override this behavior by setting the environment variable NGINX_WAIT_TIME to 0"
 sleep $NGINX_WAIT_TIME
 
-K8S_INTERNAL_LOAD_BALANCER_PRIVATE_IP=$(az network lb show -g $(az aks show -g $RESOURCE_GROUP_NAME -n $AKS_CLUSTER_NAME --query nodeResourceGroup -o tsv) -n kubernetes-internal --query "frontendIPConfigurations[0].privateIPAddress" -o tsv)
+K8S_INTERNAL_LOAD_BALANCER_PRIVATE_IP=$(az network lb show -g $(echo $AKS_INFO | jq -r .nodeResourceGroup) -n kubernetes-internal --query "frontendIPConfigurations[0].privateIPAddress" -o tsv)
 
 records=$(az network private-dns record-set a list --resource-group $RESOURCE_GROUP_NAME --zone-name $PRIVATE_DNS_ZONE_NAME --query "[].name")
 if  echo $records | grep -w api; then 
