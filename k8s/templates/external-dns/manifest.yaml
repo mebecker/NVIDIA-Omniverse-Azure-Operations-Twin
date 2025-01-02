@@ -33,6 +33,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: external-dns
+  annotations:
+    azure.workload.identity/client-id: ${AKS_IDENTITY_CLIENT_ID}
 spec:
   strategy:
     type: Recreate
@@ -43,6 +45,7 @@ spec:
     metadata:
       labels:
         app: external-dns
+        azure.workload.identity/use: "true"
     spec:
       serviceAccountName: external-dns
       containers:
