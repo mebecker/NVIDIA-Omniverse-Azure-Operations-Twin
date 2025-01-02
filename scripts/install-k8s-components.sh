@@ -12,10 +12,10 @@ TEMPLATE_FOLDER=$SCRIPT_PATH/../k8s/templates
 WORKING_FOLDER=$SCRIPT_PATH/../k8s/working
 
 mkdir -p $WORKING_FOLDER
-
-export SUBSCRIPTION_ID=$(az account show --query id -o tsv)
-export AKS_IDENTITY_CLIENT_ID=$(az identity show --name $AKS_IDENTITY_NAME --resource-group $RESOURCE_GROUP_NAME --query clientId --output tsv)
 AKS_INFO=$(az aks show -n $AKS_CLUSTER_NAME -g $RESOURCE_GROUP_NAME)
+export AKS_MANAGED_RESOURCE_GROUP=$(echo $AKS_INFO | jq -r .nodeResourceGroup)
+export AKS_IDENTITY_CLIENT_ID=$(az identity show --name $AKS_IDENTITY_NAME --resource-group $RESOURCE_GROUP_NAME --query clientId --output tsv)
+export SUBSCRIPTION_ID=$(az account show --query id -o tsv)
 
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo add nvidia https://helm.ngc.nvidia.com/nvidia
@@ -65,7 +65,7 @@ helm upgrade --install nginx-ingress-controller-internal -n nginx-ingress-contro
 echo "Giving nginx-ingresss-controller $NGINX_WAIT_TIME seconds to create internal load balancer. Override this behavior by setting the environment variable NGINX_WAIT_TIME to 0"
 sleep $NGINX_WAIT_TIME
 
-K8S_INTERNAL_LOAD_BALANCER_PRIVATE_IP=$(az network lb show -g $(echo $AKS_INFO | jq -r .nodeResourceGroup) -n kubernetes-internal --query "frontendIPConfigurations[0].privateIPAddress" -o tsv)
+K8S_INTERNAL_LOAD_BALANCER_PRIVATE_IP=$(az network lb show -g $AKS_MANAGED_RESOURCE_GROUP -n kubernetes-internal --query "frontendIPConfigurations[0].privateIPAddress" -o tsv)
 
 records=$(az network private-dns record-set a list --resource-group $RESOURCE_GROUP_NAME --zone-name $PRIVATE_DNS_ZONE_NAME --query "[].name")
 if  echo $records | grep -w api; then 

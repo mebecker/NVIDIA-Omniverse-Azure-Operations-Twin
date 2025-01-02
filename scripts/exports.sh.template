@@ -9,7 +9,6 @@ export DOMAIN_FILTER=$BASE_DOMAIN # used for external-dns service. should match 
 export PRIVATE_DNS_ZONE_NAME=omniverse-backend.$BASE_DOMAIN
 export AKS_CLUSTER_NAME=<also get this from bicep parameters file> 
 export AKS_IDENTITY_NAME=msi-aks # you don't have to change this unless you hcanged it in bicep
-export AKS_MANAGED_RESOURCE_GROUP=<your managed resource group> # you can get this via "az aks show -g rg-nvidia -n aks-nvidia --query nodeResourceGroup" or from the properties blade of your aks resource.
 export AKS_SUBNET=<your subnet name - get it from your bicep parameters file>
 export AGENT_POOL=<also get this from bicep parameters file>
 export CACHE_POOL=<also get this from bicep parameters file> 
