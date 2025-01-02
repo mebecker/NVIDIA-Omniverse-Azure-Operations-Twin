@@ -914,7 +914,7 @@ You can find links and details on the Helm Charts and Images needed in the [NGC 
 ### Sample and Resources Files
 
 For installing the needed services, template sample Helm `values.yaml` files and Custom Resource Definition (CRD)
-files are provided to configure in later steps the Kit Applications. 
+files are provided to configure Kit App Streaming in later steps.
 
 - Find the sample Helm `values.yaml` files and Custom Resource Definition (CRD) files in k8s/templates directory under root. 
 
@@ -934,13 +934,16 @@ files are provided to configure in later steps the Kit Applications.
 │    └── values.yml
 ├── nginx-ingress-controller
 │   └── values.yaml
-├── nginx-service
-│   └── values.yaml
+├── application-profile-wss.yaml
+├── application-version.yaml
+├── application.yaml
+├── ngc-omniverse.yaml
+
 
 ```
 
 >[!TIP]
->Note: Create a copy of the templates folder called working. Modify the templated samples files in this folder to accommodate your installation environment.
+>Note: Create a copy of the templates folder called working. Modify the templated sample files in this folder to accommodate your installation environment and make sure to execute the commands from the working directory as appropriate.
 
 
 ### Create Kubernetes Namespace
@@ -950,7 +953,6 @@ For simplicity, this document assumes the namespace `omni-streaming` is created 
 
 - Run `kubectl create namespace omni-streaming`
 
-NOTE: Section on Image pull secret 
 
 ### Create Image Registry Pull Secret
 
@@ -1012,8 +1014,8 @@ You can find more information on Shader Caching in the [NVIDIA documentation](ht
 
 
 
-The `values.yaml` for Memcached can be found in k8s/working/memcached folder. The additional worker nodes `agentpool` created in this setup have the [Kubernetes Label](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/) `agentpool=cachepool` set for them. You can find the labels of your worker nodes by executing `kubectl get nodes --show-labels | grep agentpool` 
-and looking for the label value, or by using `kubectl describe` on your worker node. In the 'values.yaml' fileChange the key value `${CACHE_POOL}` to 'cachepool'
+The templated `values.yaml` for Memcached can be found in k8s/working/memcached folder. The additional worker nodes `agentpool` created in this setup have the [Kubernetes Label](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/) `agentpool=cachepool` set for them. You can find the labels of your worker nodes by executing `kubectl get nodes --show-labels | grep agentpool` 
+and looking for the label value, or by using `kubectl describe` on your worker node. For the present setup, in the 'values.yaml' file change the key value `${CACHE_POOL}` to 'cachepool'
 
 
 <details>
@@ -1049,7 +1051,7 @@ architecture: high-availability
 
 After above change, you are now ready to install memcached on your Kubernetes cluster.
 
-- Ensure you are in your working directory to reference the `values.yaml` file during installation.
+- Ensure you are in the `working` directory to reference the `values.yaml` file during helminstallation.
 - Please follow [these instructions](https://docs.omniverse.nvidia.com/ovas/latest/deployments/infra/installation.html#install-memcached-service)
 to install the memcached service.
 
@@ -1094,7 +1096,7 @@ which help Kubernetes schedule(run) Flux2 pods on default CPU worker nodes.
 
 
 The default CPU worker nodes `agentpool` created in this setup have the [Kubernetes Label](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/) `agentpool=agentpool` set for them. You can find the labels of your worker nodes by executing `kubectl get nodes --show-labels | grep agentpool` 
-and looking for the label value, or by using `kubectl describe` on your worker node.  In the 'values.yaml' file Change the key value `${AGENT_POOL}` to 'agentpool'
+and looking for the label value, or by using `kubectl describe` on your worker node.  For the present setup, in the 'values.yaml' file, change the key value `${AGENT_POOL}` to 'agentpool'
 
 <details>
   <summary>The final values.yaml file for Flux2 should look similar to this:</summary>
@@ -1172,11 +1174,10 @@ TEST SUITE: None
 
 The NVIDIA Omniverse Resource Management Control Plane Service is used to manage the deployment of streaming sessions.
 
-- Your NGC API Token, created during the pre-requisite steps is needed again
-- Follow these [steps](https://docs.omniverse.nvidia.com/ovas/latest/deployments/infra/installation.html#configuring-the-service) to create an additional secret `ngc-omni-user`.
+Your NGC API Token, created during the pre-requisite steps is needed again.  Follow these [steps](https://docs.omniverse.nvidia.com/ovas/latest/deployments/infra/installation.html#configuring-the-service) to create an additional secret `ngc-omni-user`.
 
 
-The `values.yaml` for RMCP, which is provided in k8s/working/kit-appstreaming-rmcp folder, needs to be modified to ensure that the RMCP Pods run on the desired default nodes (e.g `agentpool`). Open the `values.yaml` file and locate the following section in the file:
+The templated `values.yaml` for RMCP, which is provided in k8s/working/kit-appstreaming-rmcp folder, needs to be modified to ensure that the RMCP Pods run on the desired default nodes (e.g `agentpool`). Open the `values.yaml` file and locate the following section in the file:
 
 ```yaml
         nodeSelectorTerms:
@@ -1190,9 +1191,7 @@ The `values.yaml` for RMCP, which is provided in k8s/working/kit-appstreaming-rm
 Change the value `${AGENT_POOL}` to the name of the AKS agent node pool. This node pool is given the name of `agentpool` in the instructions provided to create AKS service elsewhere in this document.
 
 You can integrate the API services with Prometheus. In this guide, Prometheus integration is assumed to be **deactivated**
-for simplicity. Follow below steps to deactivate the Prometheus integration:
-
-- In the file you will find the following section where Prometheus integration is disabled:
+for simplicity. In the file you will find the following section where Prometheus integration is disabled:
 
 ```yaml
   monitoring:
@@ -1232,7 +1231,7 @@ for simplicity. Follow below steps to deactivate the Prometheus integration:
 
 After above change, you are now ready to install RMCP on your Kubernetes cluster.
 
-- Ensure you are your working directory to reference the `values.yaml` file you modified in the next steps helm installation.
+- Ensure you are in the `working` directory to reference the `values.yaml` file during helm installation.
 - Please follow [these instructions](https://docs.omniverse.nvidia.com/ovas/latest/deployments/infra/installation.html#deploying-the-service)
 to install RMCP.
 
@@ -1382,15 +1381,17 @@ Replace \<registry-name\> with the name of your ACR (e.g., "my-container-registr
 $ docker pull <registry-name>.azurecr.io/<image-name>
 ```
 
-### Upload Helm Charts etc from NGC recommendation
+### Upload Helm Charts from NGC recommendation
 
 *Note: Kubernetes containers and Helm charts are retrieved from NGC.* [Omniverse Application Streaming API | NVIDIA NGC](https://catalog.ngc.nvidia.com/orgs/nvidia/teams/omniverse/collections/kit-appstreaming-collection)
+
+-Ensure you are in the `working` directory to reference different `values.yaml` files during helm installations.
 
 ### Helm Chart Deployment and Configuration
 
 #### *Set environment-specific values*
 
-At a minimum, the following values need to be changed to suit your environment. Note: Instructions for this are specified in the following steps.
+At a minimum, the following values need to be changed to suit your environment for this setup as specified in the following steps.
 
 * **k8s/working/nginx-ingress-controller/values-internal.yaml** 
 ```yaml  
@@ -1423,7 +1424,7 @@ $ helm repo add bitnami https://charts.bitnami.com/bitnami
 
 $ helm repo update
 
-$ helm upgrade -i nginx-ingress-controller-internal -n nginx-ingress-controller --create-namespace -f helm/nginx-ingress-controller/values-internal.yaml bitnami/nginx-ingress-controller
+$ helm upgrade -i nginx-ingress-controller-internal -n nginx-ingress-controller --create-namespace -f nginx-ingress-controller/values-internal.yaml bitnami/nginx-ingress-controller
 ```
 
 Ensure the Service of type LoadBalancer is provisioned with a private external IP (i.e. does not say `Pending`;
@@ -1450,7 +1451,7 @@ Create `azure.json` file with new credentials:
 
 Execute the following:
 ```Shell
-$ kubectl create secret generic azure-config-file --namespace "default" --from-file ./k8s/working/azure.json
+$ kubectl create secret generic azure-config-file --namespace "default" --from-file azure.json
 ```
 
 Edit `k8s/working/external-dns/manifest.yaml` and edit appropriate values for `--domain-filter` and `--azure-resource-group`.
@@ -1477,7 +1478,7 @@ spec:
 Apply the External DNS Manifest. 
 
 ```Shell
-$ kubectl apply -f k8s/working//external-dns/manifest.yaml
+$ kubectl apply -f external-dns/manifest.yaml
 ```
 
 ### Omniverse Kit App Streaming Services
@@ -1503,7 +1504,7 @@ backend_csp_args:
 
 Deploy `k8s/working/kit-appstreaming-manager` by running:
 ```Shell
-$ helm upgrade --install --namespace omni-streaming -f ./k8s/working/kit-appstreaming-manager/values.yaml streaming omniverse/kit-appstreaming-manager
+$ helm upgrade --install --namespace omni-streaming -f kit-appstreaming-manager/values.yaml streaming omniverse/kit-appstreaming-manager
 ```
 
 #### *Applications helm kit appstreaming applications*
@@ -1518,7 +1519,7 @@ ingress:
 Deploy `k8s/working/kit-appstreaming-applications` by running:
 
 ```Shell
-$ helm upgrade --install --namespace omni-streaming -f ./k8s/working/kit-appstreaming-applications/values.yaml applications omniverse/kit-appstreaming-applications 
+$ helm upgrade --install --namespace omni-streaming -f /kit-appstreaming-applications/values.yaml applications omniverse/kit-appstreaming-applications 
 ```
 
 
