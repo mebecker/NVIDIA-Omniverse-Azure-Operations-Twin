@@ -12,6 +12,8 @@ TEMPLATE_FOLDER=$SCRIPT_PATH/../k8s/templates
 WORKING_FOLDER=$SCRIPT_PATH/../k8s/working
 
 mkdir -p $WORKING_FOLDER
+rm -r $WORKING_FOLDER/*
+
 AKS_INFO=$(az aks show -n $AKS_CLUSTER_NAME -g $RESOURCE_GROUP_NAME)
 export AKS_MANAGED_RESOURCE_GROUP=$(echo $AKS_INFO | jq -r .nodeResourceGroup)
 export AKS_IDENTITY_CLIENT_ID=$(az identity show --name $AKS_IDENTITY_NAME --resource-group $RESOURCE_GROUP_NAME --query clientId --output tsv)
