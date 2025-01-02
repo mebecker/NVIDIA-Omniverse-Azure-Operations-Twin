@@ -911,12 +911,12 @@ to access the needed resources.
 
 You can find links and details on the Helm Charts and Images needed in the [NGC Collection for Omniverse Application Streaming API](https://catalog.ngc.nvidia.com/orgs/nvidia/teams/omniverse/collections/kit-appstreaming-collection)
 
-### Download Sample and Resources Files
+### Sample and Resources Files
 
-For installing the needed services, NVIDIA provides sample Helm `values.yaml` files and Custom Resource Definition (CRD)
-files used to configure in later steps the Kit Applications.
+For installing the needed services, template sample Helm `values.yaml` files and Custom Resource Definition (CRD)
+files are provided to configure in later steps the Kit Applications. 
 
-- Find the sample Helm `values.yaml` files and Custom Resource Definition (CRD) files in k8s directory under root
+- Find the sample Helm `values.yaml` files and Custom Resource Definition (CRD) files in k8s/templates directory under root. 
 
 ```shell
 ├── externla-dns
@@ -939,7 +939,9 @@ files used to configure in later steps the Kit Applications.
 
 ```
 
-These files are needed in the following steps, and also need to be modified to accommodate your installation environment.
+>[!TIP]
+>Note: Create a copy of the templates folder called working. Modify the templated samples files in this folder to accommodate your installation environment.
+
 
 ### Create Kubernetes Namespace
 
@@ -1010,7 +1012,7 @@ You can find more information on Shader Caching in the [NVIDIA documentation](ht
 
 
 
-The `values.yaml` for Memcached can be found in k8s/templates/memcached folder. The additional worker nodes `agentpool` created in this setup have the [Kubernetes Label](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/) `agentpool=cachepool` set for them. You can find the labels of your worker nodes by executing `kubectl get nodes --show-labels | grep agentpool` 
+The `values.yaml` for Memcached can be found in k8s/working/memcached folder. The additional worker nodes `agentpool` created in this setup have the [Kubernetes Label](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/) `agentpool=cachepool` set for them. You can find the labels of your worker nodes by executing `kubectl get nodes --show-labels | grep agentpool` 
 and looking for the label value, or by using `kubectl describe` on your worker node. In the 'values.yaml' fileChange the key value `${CACHE_POOL}` to 'cachepool'
 
 
@@ -1087,7 +1089,7 @@ Memcached can be accessed via port 11211 on the following DNS name from within y
 The components of the CNCF project Flux are used to manage the deployment of streaming applications. 
 This approach makes the deployment and the management of Helm repositories and the resources more declarative and easier to manage.
 
-The `values.yaml` for Flux2 can be found in k8s/templates/flux2 folder. To ensure that the Flux pods run on the desired Nodes (our default agentpool/CPU nodes) we need to update values which translate into [nodeSelector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) terms
+The `values.yaml` for Flux2 can be found in k8s/working/flux2 folder. To ensure that the Flux pods run on the desired Nodes (our default agentpool/CPU nodes) we need to update values which translate into [nodeSelector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) terms
 which help Kubernetes schedule(run) Flux2 pods on default CPU worker nodes.
 
 
@@ -1174,7 +1176,7 @@ The NVIDIA Omniverse Resource Management Control Plane Service is used to manage
 - Follow these [steps](https://docs.omniverse.nvidia.com/ovas/latest/deployments/infra/installation.html#configuring-the-service) to create an additional secret `ngc-omni-user`.
 
 
-The `values.yaml` for RMCP, which is provided in k8s/templates/kit-appstreaming-rmcp folder, needs to be modified to ensure that the RMCP Pods run on the desired default nodes (e.g `agentpool`). Open the `values.yaml` file and locate the following section in the file:
+The `values.yaml` for RMCP, which is provided in k8s/working/kit-appstreaming-rmcp folder, needs to be modified to ensure that the RMCP Pods run on the desired default nodes (e.g `agentpool`). Open the `values.yaml` file and locate the following section in the file:
 
 ```yaml
         nodeSelectorTerms:
@@ -1390,30 +1392,30 @@ $ docker pull <registry-name>.azurecr.io/<image-name>
 
 At a minimum, the following values need to be changed to suit your environment. Note: Instructions for this are specified in the following steps.
 
-* **k8s/nginx-ingress-controller/values-internal.yaml** 
+* **k8s/working/nginx-ingress-controller/values-internal.yaml** 
 ```yaml  
-service.beta.kubernetes.io/azure-load-balancer-resource-group: ${AKS_MANAGED_RESOURCE_GROUP} # Replace the name of the managed resource group name whihc typically starts with MC_
+service.beta.kubernetes.io/azure-load-balancer-resource-group: ${AKS_MANAGED_RESOURCE_GROUP} # Replace the name of the managed resource group name which typically starts with MC_
 service.beta.kubernetes.io/azure-load-balancer-internal-subnet: ${AKS_SUBNET} # Replace wth the name of the subnet where AKS cluster is running
 ```
-  * **k8s/kit-appstreaming-applications/values.yaml**
+  * **k8s/working/kit-appstreaming-applications/values.yaml**
 ```yaml
-host: ${API_INGRESS_URL} # Replace with the value equal to api.<Private DNS Zone>
+host: ${API_INGRESS_URL} # Replace with the value equal to api.<Private DNS Zone> which will be api.contoso-ov-kitappstreaming.net specific to this jumpstart document instructions
 ...
 repository: <kit appstreaming applications container URL> 
 ```
 
-* **helm/kit-appstreaming-manager/values.yaml**
+* **k8s/working/kit-appstreaming-manager/values.yaml**
 ```yaml
-host: api.<private DNS zone>  
-backend_csp_args.base_domain: <public DNS zone>   
+host: ${API_INGRESS_URL} # # Replace with the value equal to api.<Private DNS Zone> which will be api.contoso-ov-kitappstreaming.net specific to this jumpstart document instructions
+backend_csp_args.base_domain: "${STREAMING_BASE_DOMAIN}"  # Replace with the value kitstreaming.iai-contose.com specific to this jumpstart document instructions
 ```
 
 #### *Internal ingress controller helm nginx ingress controller*
 
-Check `values` file; make sure resource group is correct in annotations. File is located at `helm/nginx-ingress-controller/values-internal.yaml`
+Check `values` file; make sure resource group is correct in annotations. File is located at `k8s/working/nginx-ingress-controller/values-internal.yaml`
 
 ```yaml
-service.beta.kubernetes.io/azure-load-balancer-resource-group: <name of resource group>
+service.beta.kubernetes.io/azure-load-balancer-resource-group: ${AKS_MANAGED_RESOURCE_GROUP} # Replace the name of the managed resource group name which typically starts with MC_
 ```
 
 ```Shell
@@ -1435,47 +1437,23 @@ check output of `kubectl get svc -A`)
 
 #### *ExternalDNS scripts external dns*
 
-Create a service principal and assign the correct roles via the first script. Edit the `scripts/external-dns/01-create-sp-for-rbac.sh` file with the desired values:
-
-```Shell
-SUBSCRIPTION_ID="<SUBSCRIPTION_ID>"
-
-EXTERNALDNS_NEW_SP_NAME="<name of the service principal>"
-
-AZURE_DNS_ZONE_RESOURCE_GROUP="<name of resource group>"
-
-AZURE_DNS_ZONE="<name of public DNS Zone>"
-```
-
-Execute `./scripts/external-dns/01-create-sp-for-rbac.sh`.
-
-Example output:
-```Shell
-$ ./scripts/external-dns/01-create-sp-for-rbac.sh
-
-WARNING: The output includes credentials that you must protect. Be sure that you do not include these credentials in your code or check the credentials into your source control. For more information, see https://aka.ms/azadsp-cli Client ID: <CLIENT ID HERE> Client secret: <CLIENT SECRET HERE>
-```
-
-
-Copy `azure.json.template` to `azure.json` and add the above 'client ID', 'secret', 'resource group' and 'subscription ID'. 
+Create a new `azure.json` in the k8s/working folder and add the resourceGroup and subscriptionId values as shown below. 
 
 Create `azure.json` file with new credentials:
 ```json
- {   
-  "tenantId": "<Your-tentent-ID>",
-  "subscriptionId": "<your-subscription-id>",
-  "resourceGroup": "<dns-zone-rg>",
-  "aadClientId": "<client-id>",
-  "aadClientSecret": "<client-secret>"
-}
+ {
+    "subscriptionId": "<SUBSCRIPTION_ID>",
+    "resourceGroup": "<RESOURCE_GROUP_NAME>",
+    "useWorkloadIdentityExtension": true
+  }
 ```
 
 Execute the following:
 ```Shell
-$ kubectl create secret generic azure-config-file --namespace "default" --from-file ./scripts/external-dns/azure.json
+$ kubectl create secret generic azure-config-file --namespace "default" --from-file ./k8s/working/azure.json
 ```
 
-Edit `scripts/external-dns/03-external-dns-manifest.yaml` and edit appropriate values for `--domain-filter` and `--azure-resource-group`.
+Edit `k8s/working/external-dns/manifest.yaml` and edit appropriate values for `--domain-filter` and `--azure-resource-group`.
 
 ```yaml
 spec:
@@ -1486,9 +1464,9 @@ spec:
       args:
         - --source=service
         - --source=ingress
-        - --domain-filter=<public DNS domain>
+        - --domain-filter=<public DNS domain> # The public DNS domain used in the jumpstart doucment is iai-contoso.com
         - --provider=azure
-        - --azure-resource-group=<name of resource group>
+        - --azure-resource-group=<name of resource group> # Name of the resources where all the resources are deployed
         - --txt-prefix=externaldns-
       volumeMounts:
         - name: azure-config-file
@@ -1499,18 +1477,18 @@ spec:
 Apply the External DNS Manifest. 
 
 ```Shell
-$ kubectl apply -f scripts/external-dns/03-external-dns-manifest.yaml
+$ kubectl apply -f k8s/working//external-dns/manifest.yaml
 ```
 
 ### Omniverse Kit App Streaming Services
 
 #### *Streaming helm kit appstreaming manager*
 
-Check `helm/kit-appstreaming-manager/values.yaml` file and update DNS names accordingly:
+Check `k8s/working/kit-appstreaming-manager/values.yaml` file and update DNS names accordingly:
 
 ```yaml
 ingress:
-  host: api.<your-private-domain> 	   
+  host: api.<your-private-domain> 	# Replace with the value equal to api.<Private DNS Zone> which will be api.contoso-ov-kitappstreaming.net specific to this jumpstart document instructions   
   className: internal-nginx... 
 ```
 
@@ -1520,33 +1498,33 @@ Enable WSS:
 backend_csp_cls: "nv.svc.streaming._csp.Generic"    
 backend_csp_args:      
   enable_wss: true 
-  base_domain: "<public DNS domain>"
+  base_domain: "<public DNS domain>" # Replace with the value kitstreaming.iai-contose.com specific to this jumpstart document instructions
 ```
 
-Deploy `helm/kit-appstreaming-manager` by running:
+Deploy `k8s/working/kit-appstreaming-manager` by running:
 ```Shell
-$ helm upgrade --install --namespace omni-streaming -f helm/kit-appstreaming-manager/values.yaml streaming omniverse/kit-appstreaming-manager
+$ helm upgrade --install --namespace omni-streaming -f ./k8s/working/kit-appstreaming-manager/values.yaml streaming omniverse/kit-appstreaming-manager
 ```
 
 #### *Applications helm kit appstreaming applications*
 
-Check `helm/kit-appstreaming-applications/values.yaml` file and update DNS names accordingly:
+Check `k8s/working/kit-appstreaming-applications/values.yaml` file and update DNS names accordingly:
 
 ```yaml
 ingress:
-  host: api.<private domain name> 
+  host: api.<private domain name> # Replace with the value equal to api.<Private DNS Zone> which will be api.contoso-ov-kitappstreaming.net specific to this jumpstart document instructions
 ```
 
-Deploy `helm/kit-appstreaming-applications` by running:
+Deploy `k8s/working/kit-appstreaming-applications` by running:
 
 ```Shell
-$ helm upgrade --install --namespace omni-streaming -f helm/kit-appstreaming-applications/values.yaml applications omniverse/kit-appstreaming-applications 
+$ helm upgrade --install --namespace omni-streaming -f ./k8s/working/kit-appstreaming-applications/values.yaml applications omniverse/kit-appstreaming-applications 
 ```
 
 
 #### *Deploy the custom streaming resources manifests omniverse azure*
 
-Enable WSS, open `manifests/omniverse/azure/application-profile-wss.yaml` and edit the following sections listed below:
+Enable WSS, open `k8s/working/application-profile-wss.yaml` and edit the following sections listed below:
 
 ```yaml
 spec:
@@ -1571,7 +1549,7 @@ $ kubectl apply -n omni-streaming -f application-profile-wss.yaml
 
 Execute the following:
 ```Shell
-$ kubectl apply -n omni-streaming -f manifests/helm-repositories/ngc-omniverse.yaml 
+$ kubectl apply -n omni-streaming -f ngc-omniverse.yaml 
 ```
 This should (eventually) show `READY: True` in the output of:
 
