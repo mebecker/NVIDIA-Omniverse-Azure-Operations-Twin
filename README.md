@@ -574,6 +574,13 @@ In summary your node pools should look similar to this:
 
 <img src="images/image30.png" style="width:4in"/>
 
+#### *Configure Security*
+
+- Check `Workload Identity` option to enable workload identity 
+- Check `Image Cleaner` option to enale image cleaner (optionally)
+
+<img src="images/image71.png" style="width:4in"/>
+
 #### *Confirm and create cluster*
 
 Review all the configurations across the “Basics”, “Node Pools” & “Networking” tabs of the “Create Kubernetes Cluster” form.
